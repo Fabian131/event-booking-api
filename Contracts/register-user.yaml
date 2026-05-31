@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: Register User API
+  version: 1.0.0
+
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register a new user
+      description: Creates a new user account. Validates first/last name (letters only, min 2 chars), email existence via DNS, phone format, and password strength. Returns ALL validation errors at once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Email or phone already registered (all duplicates returned together)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '422':
+          description: Validation failed - returns ALL errors accumulated (name, email, phone, password)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - email
+        - password
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "Fabian"
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "Sanchez Salinas"
+        email:
+          type: string
+          format: email
+          maxLength: 150
+          example: "fs7290423@gmail.com"
+        phone:
+          type: string
+          maxLength: 20
+          unique: true
+          example: "61101461"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 255
+          example: "Fabian1234#"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+          example: "One or more validation errors occurred"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+          examples:
+            all_errors:
+              value:
+                - field: "first_name"
+                  message: "First name can only contain letters"
+                - field: "last_name"
+                  message: "Last name must be at least 2 characters"
+                - field: "email"
+                  message: "Email domain does not exist or cannot receive emails"
+                - field: "phone"
+                  message: "Phone must be 7-15 digits"
+                - field: "password"
+                  message: "Password must contain at least one uppercase letter"
+                - field: "password"
+                  message: "Password must contain at least one number"
+            duplicates:
+              value:
+                - field: "email"
+                  message: "Email already registered"
+                - field: "phone"
+                  message: "Phone number already registered"
