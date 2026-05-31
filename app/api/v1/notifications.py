@@ -1,15 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from typing import Optional
 from uuid import UUID
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.domain.models import Notification, User
+from app.domain.models import User
+from app.repositories.notification_repository import NotificationRepository
+from app.services.notification_service import NotificationService
 from app.schemas.notification import NotificationResponse
 from app.schemas.common import PaginatedResponse, PaginationMeta, ValidationError
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
+
+
+def get_notification_service(db: AsyncSession = Depends(get_db)) -> NotificationService:
+    return NotificationService(NotificationRepository(db))
 
 
 @router.get(
@@ -21,29 +26,12 @@ async def list_notifications(
     limit: int = Query(20, ge=1, le=100),
     is_read: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    notification_service: NotificationService = Depends(get_notification_service),
 ):
-    query = select(Notification).where(Notification.user_id == current_user.id)
-
-    if is_read is not None:
-        query = query.where(Notification.is_read == is_read)
-
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
-    query = query.offset((page - 1) * limit).limit(limit)
-    result = await db.execute(query)
-    notifications = result.scalars().all()
-
+    notifications, total = await notification_service.list_notifications(current_user.id, page, limit, is_read)
     return PaginatedResponse(
         data=notifications,
-        pagination=PaginationMeta(
-            page=page,
-            limit=limit,
-            total=total,
-            total_pages=(total + limit - 1) // limit,
-        ),
+        pagination=PaginationMeta(page=page, limit=limit, total=total, total_pages=(total + limit - 1) // limit),
     )
 
 
@@ -55,30 +43,12 @@ async def list_notifications(
 async def mark_notification_as_read(
     notification_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    notification_service: NotificationService = Depends(get_notification_service),
 ):
-    result = await db.execute(
-        select(Notification).where(
-            Notification.id == notification_id,
-            Notification.user_id == current_user.id,
-        )
-    )
-    notification = result.scalar_one_or_none()
-
-    if not notification:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=[{"field": "notification_id", "message": "Notification not found"}],
-        )
-
-    if notification.is_read:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=[{"field": "is_read", "message": "Notification is already marked as read"}],
-        )
-
-    notification.is_read = True
-    await db.flush()
-    await db.refresh(notification)
-
-    return notification
+    try:
+        return await notification_service.mark_as_read(notification_id, current_user.id)
+    except ValueError as e:
+        detail = e.args[0]
+        if any(d.get("field") == "notification_id" for d in detail):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
