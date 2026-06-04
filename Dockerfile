@@ -21,7 +21,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY --chown=appuser:appuser . .
 COPY --chown=appuser:appuser entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 USER appuser
 
