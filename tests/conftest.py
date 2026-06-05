@@ -1,10 +1,11 @@
 import os
-import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from httpx import AsyncClient
 from app.core.database import Base, get_db
+from app.core.security import get_password_hash
+from app.domain.models import User
 from app.main import app
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
@@ -23,6 +24,31 @@ async def db_session():
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest_asyncio.fixture
+async def create_user(db_session: AsyncSession):
+    async def _create_user(
+        email: str,
+        password: str = "Password1!",
+        role: str = "customer",
+        first_name: str = "Test",
+        last_name: str = "User",
+    ) -> User:
+        user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password_hash=get_password_hash(password),
+            role=role,
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+        return user
+
+    return _create_user
 
 
 @pytest_asyncio.fixture

@@ -7,7 +7,7 @@ paths:
   /api/v1/events/{event_id}:
     delete:
       summary: Delete event
-      description: Deletes an event and all its schedules (requires authentication).
+      description: Deletes an event and all its schedules (business user only).
       security:
         - bearerAuth: []
       parameters:
@@ -23,6 +23,12 @@ paths:
           description: Event deleted successfully
         '401':
           description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - business user access required
           content:
             application/json:
               schema:

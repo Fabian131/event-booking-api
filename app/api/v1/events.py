@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import date as date_type, time as time_type
 from app.core.database import get_db
 from app.core.validation import ValidationErrors
-from app.api.deps import get_current_user
+from app.api.deps import require_business_user
 from app.domain.models import User
 from app.repositories.event_repository import EventRepository
 from app.services.event_service import EventService
@@ -49,6 +49,7 @@ async def list_events(
     status_code=status.HTTP_201_CREATED,
     responses={
         409: {"model": ValidationError, "description": "Schedule conflict"},
+        403: {"description": "Business user access required"},
         422: {"model": ValidationError},
     },
 )
@@ -61,7 +62,7 @@ async def create_event(
     end_time: time_type = Form(...),
     description: Optional[str] = Form(None),
     image: UploadFile = File(default=None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_business_user),
     event_service: EventService = Depends(get_event_service),
 ):
     errors = ValidationErrors()
@@ -100,6 +101,7 @@ async def get_event(event_id: UUID, event_service: EventService = Depends(get_ev
     response_model=EventResponse,
     responses={
         404: {"model": ValidationError},
+        403: {"description": "Business user access required"},
         409: {"model": ValidationError, "description": "Schedule conflict"},
         422: {"model": ValidationError},
     },
@@ -115,7 +117,7 @@ async def update_event(
     description: Optional[str] = Form(None),
     is_active: Optional[bool] = Form(None),
     image: UploadFile = File(default=None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_business_user),
     event_service: EventService = Depends(get_event_service),
 ):
     errors = ValidationErrors()
@@ -143,11 +145,14 @@ async def update_event(
 @router.delete(
     "/{event_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={404: {"model": ValidationError}},
+    responses={
+        403: {"description": "Business user access required"},
+        404: {"model": ValidationError},
+    },
 )
 async def delete_event(
     event_id: UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_business_user),
     event_service: EventService = Depends(get_event_service),
 ):
     try:
