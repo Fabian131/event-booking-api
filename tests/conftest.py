@@ -1,13 +1,15 @@
+import os
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import NullPool
 from httpx import AsyncClient
 from app.core.database import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
-engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+engine = create_async_engine(TEST_DATABASE_URL, echo=True, poolclass=NullPool)
 TestingSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
