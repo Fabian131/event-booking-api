@@ -25,8 +25,8 @@ class EventValidator:
         if request.max_capacity is not None:
             if request.max_capacity <= 0:
                 errors.add("max_capacity", "Capacity must be greater than 0")
-            elif request.max_capacity > 32767:
-                errors.add("max_capacity", "Capacity cannot exceed 32767")
+            elif request.max_capacity > 9999999:
+                errors.add("max_capacity", "Capacity cannot exceed 9999999")
 
 
 class EventService:

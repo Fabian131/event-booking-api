@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date, time
-from sqlalchemy import String, Text, Boolean, SmallInteger, Date, Time, DateTime, CheckConstraint, Uuid
+from sqlalchemy import String, Text, Boolean, SmallInteger, Integer, Date, Time, DateTime, CheckConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
@@ -12,7 +12,7 @@ class Event(Base):
     title: Mapped[str] = mapped_column(String(64), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    max_capacity: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    max_capacity: Mapped[int] = mapped_column(Integer, nullable=False)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)

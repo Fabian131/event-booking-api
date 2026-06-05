@@ -18,7 +18,7 @@ class EventCategory(str, Enum):
 class CreateEventRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=64)
     description: Optional[str] = Field(None, max_length=255)
-    max_capacity: int = Field(..., ge=1, le=32767)
+    max_capacity: int = Field(..., ge=1, le=9999999)
     category: EventCategory
     date: date
     start_time: time
@@ -28,7 +28,7 @@ class CreateEventRequest(BaseModel):
 class UpdateEventRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=64)
     description: Optional[str] = Field(None, max_length=255)
-    max_capacity: Optional[int] = Field(None, ge=1, le=32767)
+    max_capacity: Optional[int] = Field(None, ge=1, le=9999999)
     category: Optional[EventCategory] = None
     date: Optional[date] = None
     start_time: Optional[time] = None
