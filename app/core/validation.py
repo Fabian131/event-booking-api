@@ -26,7 +26,7 @@ class ValidationErrors:
 
 def validate_email_exists(email: str, errors: ValidationErrors):
     try:
-        validate_email(email, check_deliverability=True)
+        validate_email(email, check_deliverability=False)
     except EmailNotValidError as e:
         error_msg = str(e)
         if "domain" in error_msg.lower() or "deliverability" in error_msg.lower():

@@ -11,7 +11,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from app.core.config import settings
 from app.core.database import Base
-from app.domain.models import User, Event, EventSchedule, Reservation, Notification
+from app.domain.models import User, Event, Reservation, Notification
 
 config = context.config
 

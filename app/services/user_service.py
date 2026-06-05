@@ -54,6 +54,13 @@ class AuthService:
             "access_token": access_token,
             "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+            },
         }
 
     def _validate_registration(self, request: RegisterRequest, errors: ValidationErrors):

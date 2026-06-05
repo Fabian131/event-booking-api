@@ -26,6 +26,7 @@ class PaginationMeta(BaseModel):
     limit: int
     total: int
     total_pages: int
+    has_next_page: bool
 
 
 class PaginatedResponse(BaseModel, Generic[T]):

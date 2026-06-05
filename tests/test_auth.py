@@ -7,16 +7,19 @@ async def test_register_user_success(client: AsyncClient):
     response = await client.post(
         "/api/v1/auth/register",
         json={
-            "full_name": "Test User",
+            "first_name": "Test",
+            "last_name": "User",
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password1"
         }
     )
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "test@example.com"
-    assert data["full_name"] == "Test User"
+    assert data["first_name"] == "Test"
+    assert data["last_name"] == "User"
+    assert data["role"] == "customer"
     assert "id" in data
 
 
@@ -25,21 +28,23 @@ async def test_register_user_duplicate_email(client: AsyncClient):
     await client.post(
         "/api/v1/auth/register",
         json={
-            "full_name": "Test User",
+            "first_name": "Test",
+            "last_name": "User",
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password1"
         }
     )
-    
+
     response = await client.post(
         "/api/v1/auth/register",
         json={
-            "full_name": "Test User 2",
+            "first_name": "Test",
+            "last_name": "User Two",
             "email": "test@example.com",
-            "password": "password456"
+            "password": "Password2"
         }
     )
-    
+
     assert response.status_code == 409
 
 
@@ -48,24 +53,28 @@ async def test_login_success(client: AsyncClient):
     await client.post(
         "/api/v1/auth/register",
         json={
-            "full_name": "Test User",
+            "first_name": "Test",
+            "last_name": "User",
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password1"
         }
     )
-    
+
     response = await client.post(
         "/api/v1/auth/login",
         json={
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password1"
         }
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
+    assert "user" in data
+    assert data["user"]["email"] == "test@example.com"
+    assert data["user"]["role"] == "customer"
 
 
 @pytest.mark.asyncio
@@ -77,5 +86,5 @@ async def test_login_invalid_credentials(client: AsyncClient):
             "password": "wrongpassword"
         }
     )
-    
+
     assert response.status_code == 401

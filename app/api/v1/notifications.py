@@ -29,13 +29,18 @@ async def list_notifications(
     notification_service: NotificationService = Depends(get_notification_service),
 ):
     notifications, total = await notification_service.list_notifications(current_user.id, page, limit, is_read)
+    total_pages = (total + limit - 1) // limit if total > 0 else 0
     return PaginatedResponse(
         data=notifications,
-        pagination=PaginationMeta(page=page, limit=limit, total=total, total_pages=(total + limit - 1) // limit),
+        pagination=PaginationMeta(
+            page=page, limit=limit, total=total,
+            total_pages=total_pages,
+            has_next_page=page < total_pages,
+        ),
     )
 
 
-@router.post(
+@router.patch(
     "/{notification_id}/read",
     response_model=NotificationResponse,
     responses={400: {"model": ValidationError}, 404: {"model": ValidationError}},

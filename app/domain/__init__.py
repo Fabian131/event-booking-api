@@ -1,3 +1,3 @@
-from app.domain.models import User, Event, EventSchedule, Reservation, Notification
+from app.domain.models import User, Event, Reservation, Notification
 
-__all__ = ["User", "Event", "EventSchedule", "Reservation", "Notification"]
+__all__ = ["User", "Event", "Reservation", "Notification"]
