@@ -54,11 +54,15 @@ components:
           type: string
           minLength: 2
           maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\-']+$"
+          description: "Only letters, spaces, hyphens and apostrophes allowed. No numbers."
           example: "Fabian"
         last_name:
           type: string
           minLength: 2
           maxLength: 50
+          pattern: "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\-']+$"
+          description: "Only letters, spaces, hyphens and apostrophes allowed. No numbers."
           example: "Sanchez Salinas"
         email:
           type: string
@@ -67,14 +71,18 @@ components:
           example: "fs7290423@gmail.com"
         phone:
           type: string
-          maxLength: 20
-          unique: true
-          example: "61101461"
+          minLength: 8
+          maxLength: 8
+          pattern: "^\\d{8}$"
+          description: "Must be exactly 8 digits, no spaces, letters, or symbols."
+          example: "12345678"
         password:
           type: string
           minLength: 8
           maxLength: 255
-          example: "Fabian1234#"
+          pattern: "(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>\\-_+=\\[\\]\\/\\\\]).*"
+          description: "Must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+          example: "Example1234#"
 
     UserResponse:
       type: object
@@ -92,6 +100,11 @@ components:
         phone:
           type: string
           nullable: true
+        role:
+          type: string
+          enum: [customer]
+          description: "New users registered via this endpoint are always assigned the 'customer' role."
+          example: "customer"
         is_active:
           type: boolean
         created_at:

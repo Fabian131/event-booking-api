@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.validation import ValidationErrors
@@ -29,8 +30,18 @@ async def register(request: RegisterRequest, auth_service: AuthService = Depends
         return await auth_service.register(request, errors)
     except ValueError as e:
         detail = e.args[0]
-        status_code = status.HTTP_409_CONFLICT if any(d.get("message") in ("Email already registered", "Phone number already registered") for d in detail) else status.HTTP_422_UNPROCESSABLE_ENTITY
-        raise HTTPException(status_code=status_code, detail=detail)
+        is_duplicate = any(
+            d.get("message") in ("Email already registered", "Phone number already registered")
+            for d in detail
+        )
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT if is_duplicate else status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": "validation_error",
+                "message": "One or more validation errors occurred",
+                "details": detail,
+            },
+        )
 
 
 @router.post(
@@ -47,5 +58,15 @@ async def login(request: LoginRequest, auth_service: AuthService = Depends(get_a
         return await auth_service.login(request, errors)
     except ValueError as e:
         detail = e.args[0]
-        status_code = status.HTTP_401_UNAUTHORIZED if any(d.get("field") in ("credentials", "account") for d in detail) else status.HTTP_422_UNPROCESSABLE_ENTITY
-        raise HTTPException(status_code=status_code, detail=detail)
+        is_auth_error = any(
+            d.get("field") in ("credentials", "account")
+            for d in detail
+        )
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED if is_auth_error else status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": "validation_error",
+                "message": "One or more validation errors occurred",
+                "details": detail,
+            },
+        )
