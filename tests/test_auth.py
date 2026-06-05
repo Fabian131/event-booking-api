@@ -78,6 +78,31 @@ async def test_login_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_login_business_user_success(client: AsyncClient, create_user):
+    await create_user(
+        email="business@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="User",
+    )
+
+    response = await client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "business@example.com",
+            "password": "Password1!"
+        }
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["user"]["email"] == "business@example.com"
+    assert data["user"]["role"] == "business"
+
+
+@pytest.mark.asyncio
 async def test_login_invalid_credentials(client: AsyncClient):
     response = await client.post(
         "/api/v1/auth/login",

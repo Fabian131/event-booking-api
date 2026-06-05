@@ -21,6 +21,26 @@ async def _create_authenticated_user(client: AsyncClient) -> tuple[str, dict]:
     return token, {"Authorization": f"Bearer {token}"}
 
 
+async def _login_headers(client: AsyncClient, email: str, password: str = "Password1!") -> dict:
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
+    token = login.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def _create_business_headers(client: AsyncClient, create_user) -> dict:
+    await create_user(
+        email="business@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="User",
+    )
+    return await _login_headers(client, "business@example.com")
+
+
 async def _create_event(client: AsyncClient, headers: dict, max_capacity: int = 100) -> str:
     """Helper: create an event via form-data, return event_id."""
     resp = await client.post(
@@ -39,9 +59,10 @@ async def _create_event(client: AsyncClient, headers: dict, max_capacity: int = 
 
 
 @pytest.mark.asyncio
-async def test_create_reservation_success(client: AsyncClient):
-    token, headers = await _create_authenticated_user(client)
-    event_id = await _create_event(client, headers)
+async def test_create_reservation_success(client: AsyncClient, create_user):
+    _, headers = await _create_authenticated_user(client)
+    business_headers = await _create_business_headers(client, create_user)
+    event_id = await _create_event(client, business_headers)
 
     response = await client.post(
         "/api/v1/reservations",
@@ -62,9 +83,10 @@ async def test_create_reservation_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_reservation_insufficient_availability(client: AsyncClient):
-    token, headers = await _create_authenticated_user(client)
-    event_id = await _create_event(client, headers, max_capacity=5)
+async def test_create_reservation_insufficient_availability(client: AsyncClient, create_user):
+    _, headers = await _create_authenticated_user(client)
+    business_headers = await _create_business_headers(client, create_user)
+    event_id = await _create_event(client, business_headers, max_capacity=5)
 
     response = await client.post(
         "/api/v1/reservations",
@@ -79,9 +101,10 @@ async def test_create_reservation_insufficient_availability(client: AsyncClient)
 
 
 @pytest.mark.asyncio
-async def test_cancel_reservation(client: AsyncClient):
-    token, headers = await _create_authenticated_user(client)
-    event_id = await _create_event(client, headers)
+async def test_cancel_reservation(client: AsyncClient, create_user):
+    _, headers = await _create_authenticated_user(client)
+    business_headers = await _create_business_headers(client, create_user)
+    event_id = await _create_event(client, business_headers)
 
     reservation_response = await client.post(
         "/api/v1/reservations",
