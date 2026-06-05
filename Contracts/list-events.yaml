@@ -1,14 +1,52 @@
 openapi: 3.0.3
 info:
   title: List Events API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/events:
     get:
       summary: List all events
-      description: Returns paginated list of events with optional filters.
+      description: >
+        Returns a paginated list of events. Supports optional filters.
+        - Business calendar: filter by `date` to see the day's agenda.
+        - Customer feed: paginate with `page` / `limit`; use `search` and `category` for discovery.
+        Each event item includes embedded schedule fields (date, start_time, end_time)
+        and live `remaining_capacity`.
       parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-07-15"
+          description: "Filter by event date (YYYY-MM-DD). Required for business calendar view."
+        - in: query
+          name: search
+          schema:
+            type: string
+          example: "festival"
+          description: "Optional keyword search on title and description."
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum:
+              - sports
+              - music
+              - culture
+              - gastronomy
+              - wellness
+              - education
+              - other
+          example: "music"
+          description: "Optional category filter."
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+            default: true
+          example: true
         - in: query
           name: page
           schema:
@@ -24,20 +62,9 @@ paths:
             maximum: 100
             default: 20
           example: 20
-        - in: query
-          name: category
-          schema:
-            type: string
-          example: "Festival"
-        - in: query
-          name: is_active
-          schema:
-            type: boolean
-            default: true
-          example: true
       responses:
         '200':
-          description: List of events
+          description: Paginated list of events
           content:
             application/json:
               schema:
@@ -57,47 +84,71 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/EventResponse'
+            $ref: '#/components/schemas/EventSummary'
         pagination:
           $ref: '#/components/schemas/PaginationMeta'
 
-    EventResponse:
+    EventSummary:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         title:
           type: string
+          example: "Summer Festival"
         description:
           type: string
           nullable: true
-        location:
+        image_url:
           type: string
+          nullable: true
+          example: "https://cdn.example.com/events/summer-festival.jpg"
         max_capacity:
           type: integer
+          example: 500
+        remaining_capacity:
+          type: integer
+          description: "Live computed: max_capacity minus booked tickets"
+          example: 342
         category:
           type: string
+          example: "music"
+        date:
+          type: string
+          format: date
+          example: "2026-07-15"
+        start_time:
+          type: string
+          format: time
+          example: "10:00:00"
+        end_time:
+          type: string
+          format: time
+          example: "18:00:00"
         is_active:
           type: boolean
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
+          example: true
 
     PaginationMeta:
       type: object
       properties:
         page:
           type: integer
+          example: 1
         limit:
           type: integer
+          example: 20
         total:
           type: integer
+          example: 48
         total_pages:
           type: integer
+          example: 3
+        has_next_page:
+          type: boolean
+          example: true
 
     ErrorResponse:
       type: object

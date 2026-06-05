@@ -1,13 +1,16 @@
 openapi: 3.0.3
 info:
   title: Get Reservation by ID API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/reservations/{reservation_id}:
     get:
       summary: Get reservation by ID
-      description: Returns reservation details by ID (only for the authenticated user).
+      description: >
+        Returns full reservation details by ID.
+        Customers can only retrieve their own reservations.
+        Business admins can retrieve any reservation.
       security:
         - bearerAuth: []
       parameters:
@@ -17,7 +20,7 @@ paths:
           schema:
             type: string
             format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
+          example: "abc12345-e89b-12d3-a456-426614174000"
       responses:
         '200':
           description: Reservation details
@@ -58,17 +61,35 @@ components:
         id:
           type: string
           format: uuid
+          example: "abc12345-e89b-12d3-a456-426614174000"
         user_id:
           type: string
           format: uuid
-        event_schedule_id:
+        event_id:
           type: string
           format: uuid
+        event_title:
+          type: string
+          example: "Summer Festival"
+        event_date:
+          type: string
+          format: date
+          example: "2026-07-15"
+        event_start_time:
+          type: string
+          format: time
+          example: "10:00:00"
+        event_end_time:
+          type: string
+          format: time
+          example: "18:00:00"
+        ticket_quantity:
+          type: integer
+          example: 2
         status:
           type: string
           enum: [PENDING, CONFIRMED, CANCELLED]
-        quantity:
-          type: integer
+          example: "CONFIRMED"
         notes:
           type: string
           nullable: true

@@ -1,13 +1,15 @@
 openapi: 3.0.3
 info:
   title: Update Event API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/events/{event_id}:
     put:
       summary: Update event
-      description: Updates an existing event (requires authentication).
+      description: >
+        Admin-only. Partially updates an existing event. All fields are optional.
+        Runs the same 409 schedule-conflict check as create if date/time fields are provided.
       security:
         - bearerAuth: []
       parameters:
@@ -21,7 +23,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/UpdateEventRequest'
       responses:
@@ -43,12 +45,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Schedule conflict - time slot overlaps an existing event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "schedule_conflict"
+                message: "An event already occupies this date and time slot"
         '422':
           description: Validation failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationProblemDetails'
+                $ref: '#/components/schemas/ValidationError'
         '500':
           description: Unexpected server error
           content:
@@ -70,21 +81,37 @@ components:
         title:
           type: string
           minLength: 3
-          maxLength: 150
+          maxLength: 64
         description:
           type: string
-        location:
+          maxLength: 255
+        image:
           type: string
-          minLength: 3
-          maxLength: 100
+          format: binary
+          description: "New banner image (max 5 MB)"
         max_capacity:
           type: integer
           minimum: 1
           maximum: 32767
         category:
           type: string
-          minLength: 3
-          maxLength: 50
+          enum:
+            - sports
+            - music
+            - culture
+            - gastronomy
+            - wellness
+            - education
+            - other
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
         is_active:
           type: boolean
 
@@ -99,12 +126,26 @@ components:
         description:
           type: string
           nullable: true
-        location:
+        image_url:
           type: string
+          nullable: true
+          example: "https://cdn.example.com/events/summer-festival.jpg"
         max_capacity:
           type: integer
+        remaining_capacity:
+          type: integer
+          description: "max_capacity minus total tickets currently booked"
         category:
           type: string
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
         is_active:
           type: boolean
         created_at:
@@ -125,11 +166,12 @@ components:
           type: object
           nullable: true
 
-    ValidationProblemDetails:
+    ValidationError:
       type: object
       properties:
         error:
           type: string
+          example: "validation_error"
         message:
           type: string
         details:

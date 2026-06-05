@@ -1,13 +1,15 @@
 openapi: 3.0.3
 info:
   title: Mark Notification as Read API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/notifications/{notification_id}/read:
-    post:
+    patch:
       summary: Mark notification as read
-      description: Marks a notification as read. Returns error if already read.
+      description: >
+        Flips the `is_read` field to `true` for the specified notification.
+        Uses PATCH semantics for a clean partial-state update.
       security:
         - bearerAuth: []
       parameters:
@@ -17,6 +19,7 @@ paths:
           schema:
             type: string
             format: uuid
+          example: "notif-uuid-1234-5678-abcd"
       responses:
         '200':
           description: Notification marked as read
@@ -41,7 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Unexpected server error
           content:
@@ -70,14 +73,28 @@ components:
           type: string
           format: uuid
           nullable: true
+        event_id:
+          type: string
+          format: uuid
+          nullable: true
         type:
           type: string
+          enum:
+            - reservation_confirmed
+            - reservation_cancelled
+            - event_updated
+            - event_cancelled
+            - general
+          example: "reservation_confirmed"
         title:
           type: string
+          example: "Reservation Confirmed"
         message:
           type: string
+          example: "Your reservation for Summer Festival has been confirmed."
         is_read:
           type: boolean
+          example: true
         created_at:
           type: string
           format: date-time

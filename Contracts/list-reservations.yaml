@@ -1,16 +1,39 @@
 openapi: 3.0.3
 info:
   title: List Reservations API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/reservations:
     get:
-      summary: List user reservations
-      description: Returns paginated list of reservations for the authenticated user.
+      summary: List reservations
+      description: >
+        Dual-role endpoint.
+        - **Customer**: No `event_id` → returns "My Reservations" scoped to the token's user.
+        - **Business admin**: Supply `event_id` to list all customer reservations for that event,
+          including user names and emails for attendance tracking. Optionally filter by `search`.
       security:
         - bearerAuth: []
       parameters:
+        - in: query
+          name: event_id
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+          description: "Business use: filter reservations for a specific event."
+        - in: query
+          name: search
+          schema:
+            type: string
+          example: "Jane"
+          description: "Business use: text search on user name or email."
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CANCELLED]
+          example: "CONFIRMED"
         - in: query
           name: page
           schema:
@@ -26,15 +49,9 @@ paths:
             maximum: 100
             default: 20
           example: 20
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum: [PENDING, CONFIRMED, CANCELLED]
-          example: "CONFIRMED"
       responses:
         '200':
-          description: List of reservations
+          description: Paginated list of reservations
           content:
             application/json:
               schema:
@@ -66,36 +83,57 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ReservationResponse'
+            $ref: '#/components/schemas/ReservationSummary'
         pagination:
           $ref: '#/components/schemas/PaginationMeta'
 
-    ReservationResponse:
+    ReservationSummary:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        user_id:
+          example: "abc12345-e89b-12d3-a456-426614174000"
+        event_id:
           type: string
           format: uuid
-        event_schedule_id:
+        event_title:
           type: string
-          format: uuid
+          example: "Summer Festival"
+        event_date:
+          type: string
+          format: date
+          example: "2026-07-15"
+        ticket_quantity:
+          type: integer
+          example: 2
         status:
           type: string
           enum: [PENDING, CONFIRMED, CANCELLED]
-        quantity:
-          type: integer
+          example: "CONFIRMED"
         notes:
           type: string
           nullable: true
+        user:
+          $ref: '#/components/schemas/ReservationUserContext'
         created_at:
           type: string
           format: date-time
-        updated_at:
+
+    ReservationUserContext:
+      type: object
+      description: "User context — always present; populated with full data when admin views an event's reservations."
+      properties:
+        user_id:
           type: string
-          format: date-time
+          format: uuid
+        user_name:
+          type: string
+          example: "Jane Doe"
+        user_email:
+          type: string
+          format: email
+          example: "jane.doe@example.com"
 
     PaginationMeta:
       type: object
@@ -108,6 +146,8 @@ components:
           type: integer
         total_pages:
           type: integer
+        has_next_page:
+          type: boolean
 
     ErrorResponse:
       type: object

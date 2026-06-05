@@ -1,16 +1,24 @@
 openapi: 3.0.3
 info:
   title: List Notifications API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/notifications:
     get:
       summary: List user notifications
-      description: Returns paginated list of notifications for the authenticated user.
+      description: >
+        Returns a paginated list of notifications for the authenticated user.
+        Filter by `is_read` to show only unread items (badge count use-case).
       security:
         - bearerAuth: []
       parameters:
+        - in: query
+          name: is_read
+          schema:
+            type: boolean
+          example: false
+          description: "Filter by read status. Omit to get all notifications."
         - in: query
           name: page
           schema:
@@ -26,14 +34,9 @@ paths:
             maximum: 100
             default: 20
           example: 20
-        - in: query
-          name: is_read
-          schema:
-            type: boolean
-          example: false
       responses:
         '200':
-          description: List of notifications
+          description: Paginated list of notifications
           content:
             application/json:
               schema:
@@ -82,14 +85,30 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: "Related reservation, if applicable"
+        event_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Related event, for deep-linking to the event screen"
         type:
           type: string
+          enum:
+            - reservation_confirmed
+            - reservation_cancelled
+            - event_updated
+            - event_cancelled
+            - general
+          example: "reservation_confirmed"
         title:
           type: string
+          example: "Reservation Confirmed"
         message:
           type: string
+          example: "Your reservation for Summer Festival has been confirmed."
         is_read:
           type: boolean
+          example: false
         created_at:
           type: string
           format: date-time
@@ -105,6 +124,8 @@ components:
           type: integer
         total_pages:
           type: integer
+        has_next_page:
+          type: boolean
 
     ErrorResponse:
       type: object

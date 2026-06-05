@@ -1,13 +1,16 @@
 openapi: 3.0.3
 info:
   title: Login User API
-  version: 1.0.0
+  version: 2.0.0
 
 paths:
   /api/v1/auth/login:
     post:
       summary: Login user
-      description: Authenticates user and returns JWT token.
+      description: >
+        Authenticates a user and returns a JWT token alongside a compact user
+        profile (including `role`) so the mobile app can perform conditional
+        routing immediately after login.
       requestBody:
         required: true
         content:
@@ -28,7 +31,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidationError'
         '422':
-          description: Validation failed (invalid email format)
+          description: Validation failed (invalid email format, missing fields)
           content:
             application/json:
               schema:
@@ -61,12 +64,41 @@ components:
       properties:
         access_token:
           type: string
+          description: "JWT Bearer token"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         token_type:
           type: string
-          example: bearer
+          example: "bearer"
         expires_in:
           type: integer
-          description: Token expiration time in seconds
+          description: "Token expiration time in seconds"
+          example: 3600
+        user:
+          $ref: '#/components/schemas/AuthenticatedUser'
+
+    AuthenticatedUser:
+      type: object
+      description: "Compact user profile for immediate client-side role routing"
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        role:
+          type: string
+          enum: [business, customer]
+          description: "Controls app routing: 'business' sees admin dashboard, 'customer' sees booking flow"
+          example: "customer"
 
     ErrorResponse:
       type: object
