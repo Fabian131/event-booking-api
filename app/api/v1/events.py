@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
-from datetime import date, time
+from datetime import date as date_type, time as time_type
 from app.core.database import get_db
 from app.core.validation import ValidationErrors
 from app.api.deps import get_current_user
@@ -23,7 +23,7 @@ def get_event_service(db: AsyncSession = Depends(get_db)) -> EventService:
 async def list_events(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    date_filter: Optional[date] = Query(None, alias="date"),
+    date_filter: Optional[date_type] = Query(None, alias="date"),
     search: Optional[str] = None,
     category: Optional[str] = None,
     is_active: Optional[bool] = True,
@@ -56,11 +56,11 @@ async def create_event(
     title: str = Form(...),
     max_capacity: int = Form(...),
     category: EventCategory = Form(...),
-    event_date: date = Form(..., alias="date"),
-    start_time: time = Form(...),
-    end_time: time = Form(...),
+    date: date_type = Form(...),
+    start_time: time_type = Form(...),
+    end_time: time_type = Form(...),
     description: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None),
+    image: UploadFile = File(default=None),
     current_user: User = Depends(get_current_user),
     event_service: EventService = Depends(get_event_service),
 ):
@@ -70,12 +70,12 @@ async def create_event(
         description=description,
         max_capacity=max_capacity,
         category=category,
-        date=event_date,
+        date=date,
         start_time=start_time,
         end_time=end_time,
     )
     try:
-        return await event_service.create_event(request, errors)
+        return await event_service.create_event(request, errors, image)
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "schedule" for d in detail):
@@ -109,12 +109,12 @@ async def update_event(
     title: Optional[str] = Form(None),
     max_capacity: Optional[int] = Form(None),
     category: Optional[EventCategory] = Form(None),
-    event_date: Optional[date] = Form(None, alias="date"),
-    start_time: Optional[time] = Form(None),
-    end_time: Optional[time] = Form(None),
+    date: Optional[date_type] = Form(None),
+    start_time: Optional[time_type] = Form(None),
+    end_time: Optional[time_type] = Form(None),
     description: Optional[str] = Form(None),
     is_active: Optional[bool] = Form(None),
-    image: Optional[UploadFile] = File(None),
+    image: UploadFile = File(default=None),
     current_user: User = Depends(get_current_user),
     event_service: EventService = Depends(get_event_service),
 ):
@@ -124,13 +124,13 @@ async def update_event(
         description=description,
         max_capacity=max_capacity,
         category=category,
-        date=event_date,
+        date=date,
         start_time=start_time,
         end_time=end_time,
         is_active=is_active,
     )
     try:
-        return await event_service.update_event(event_id, request, errors)
+        return await event_service.update_event(event_id, request, errors, image)
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "event_id" for d in detail):

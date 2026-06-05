@@ -1,6 +1,8 @@
 from uuid import UUID
 from datetime import date
+from fastapi import UploadFile
 from app.core.validation import ValidationErrors
+from app.core.cloudinary import upload_event_image, delete_event_image
 from app.domain.models import Event
 from app.repositories.event_repository import EventRepository
 from app.schemas.event import CreateEventRequest, UpdateEventRequest, EventResponse
@@ -62,7 +64,7 @@ class EventService:
         remaining = await self.event_repo.get_remaining_capacity(event.id)
         return self._to_response(event, remaining)
 
-    async def create_event(self, request: CreateEventRequest, errors: ValidationErrors) -> dict:
+    async def create_event(self, request: CreateEventRequest, errors: ValidationErrors, image: UploadFile | None = None) -> dict:
         EventValidator.validate(request, errors)
         if errors.has_errors():
             raise ValueError(errors.to_response())
@@ -73,9 +75,14 @@ class EventService:
         if conflicts:
             raise ValueError([{"field": "schedule", "message": "An event already occupies this date and time slot"}])
 
+        image_url = None
+        if image:
+            image_url = await upload_event_image(image)
+
         event = await self.event_repo.create(
             title=request.title,
             description=request.description,
+            image_url=image_url,
             max_capacity=request.max_capacity,
             category=request.category.value,
             date=request.date,
@@ -84,7 +91,7 @@ class EventService:
         )
         return self._to_response(event, event.max_capacity)
 
-    async def update_event(self, event_id: UUID, request: UpdateEventRequest, errors: ValidationErrors) -> dict:
+    async def update_event(self, event_id: UUID, request: UpdateEventRequest, errors: ValidationErrors, image: UploadFile | None = None) -> dict:
         event = await self.event_repo.get_by_id(event_id)
         if not event:
             raise ValueError([{"field": "event_id", "message": "Event not found"}])
@@ -104,9 +111,15 @@ class EventService:
             if conflicts:
                 raise ValueError([{"field": "schedule", "message": "An event already occupies this date and time slot"}])
 
-        update_data = request.model_dump(exclude_unset=True)
+        update_data = request.model_dump(exclude_unset=True, exclude_none=True)
         if "category" in update_data and update_data["category"] is not None:
             update_data["category"] = update_data["category"].value
+
+        if image:
+            if event.image_url:
+                delete_event_image(event.image_url)
+            image_url = await upload_event_image(image)
+            update_data["image_url"] = image_url
 
         updated = await self.event_repo.update(event, **update_data)
         remaining = await self.event_repo.get_remaining_capacity(updated.id)
