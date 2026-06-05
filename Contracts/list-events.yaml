@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: List Events API
-  version: 2.0.0
+  version: 1.0.0
 
 paths:
   /api/v1/events:
