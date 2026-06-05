@@ -10,7 +10,7 @@ async def test_register_user_success(client: AsyncClient):
             "first_name": "Test",
             "last_name": "User",
             "email": "test@example.com",
-            "password": "Password1"
+            "password": "Password1!"
         }
     )
 
@@ -31,7 +31,7 @@ async def test_register_user_duplicate_email(client: AsyncClient):
             "first_name": "Test",
             "last_name": "User",
             "email": "test@example.com",
-            "password": "Password1"
+            "password": "Password1!"
         }
     )
 
@@ -41,7 +41,7 @@ async def test_register_user_duplicate_email(client: AsyncClient):
             "first_name": "Test",
             "last_name": "User Two",
             "email": "test@example.com",
-            "password": "Password2"
+            "password": "Password2!"
         }
     )
 
@@ -56,7 +56,7 @@ async def test_login_success(client: AsyncClient):
             "first_name": "Test",
             "last_name": "User",
             "email": "test@example.com",
-            "password": "Password1"
+            "password": "Password1!"
         }
     )
 
@@ -64,7 +64,7 @@ async def test_login_success(client: AsyncClient):
         "/api/v1/auth/login",
         json={
             "email": "test@example.com",
-            "password": "Password1"
+            "password": "Password1!"
         }
     )
 

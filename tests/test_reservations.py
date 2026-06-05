@@ -10,12 +10,12 @@ async def _create_authenticated_user(client: AsyncClient) -> tuple[str, dict]:
             "first_name": "Test",
             "last_name": "User",
             "email": "test@example.com",
-            "password": "Password1",
+            "password": "Password1!",
         },
     )
     login = await client.post(
         "/api/v1/auth/login",
-        json={"email": "test@example.com", "password": "Password1"},
+        json={"email": "test@example.com", "password": "Password1!"},
     )
     token = login.json()["access_token"]
     return token, {"Authorization": f"Bearer {token}"}
