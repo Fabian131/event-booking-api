@@ -25,6 +25,11 @@ class ValidationErrors:
 
 
 def validate_email_exists(email: str, errors: ValidationErrors):
+    if not email or not email.strip():
+        errors.add("email", "Email cannot be empty")
+        return
+    if len(email) > 150:
+        errors.add("email", "Email must be at most 150 characters")
     try:
         validate_email(email, check_deliverability=False)
     except EmailNotValidError as e:
@@ -38,18 +43,30 @@ def validate_email_exists(email: str, errors: ValidationErrors):
 
 
 def validate_phone_format(phone: str, errors: ValidationErrors):
-    if phone:
-        cleaned = re.sub(r'[\s\-\(\)\+]', '', phone)
-        if not cleaned.isdigit() or len(cleaned) < 7 or len(cleaned) > 15:
-            errors.add("phone", "Phone must be 7-15 digits")
+    if phone is not None:
+        if not phone.strip():
+            errors.add("phone", "Phone cannot be empty spaces if provided")
+            return
+        if re.search(r'[a-zA-Z]', phone):
+            errors.add("phone", "Phone number cannot contain letters")
+            return
+        if not phone.isdigit() or len(phone) != 8:
+            errors.add("phone", "Phone must be exactly 8 digits without spaces or symbols")
 
 
 def validate_password_strength(password: str, errors: ValidationErrors):
+    if not password:
+        errors.add("password", "Password cannot be empty")
+        return
     if len(password) < 8:
         errors.add("password", "Password must be at least 8 characters")
+    if len(password) > 255:
+        errors.add("password", "Password must be at most 255 characters")
     if not re.search(r'[A-Z]', password):
         errors.add("password", "Password must contain at least one uppercase letter")
     if not re.search(r'[a-z]', password):
         errors.add("password", "Password must contain at least one lowercase letter")
     if not re.search(r'\d', password):
         errors.add("password", "Password must contain at least one number")
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_+=\[\]\/\\]', password):
+        errors.add("password", "Password must contain at least one special character")

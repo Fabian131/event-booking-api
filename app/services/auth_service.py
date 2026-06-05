@@ -5,10 +5,17 @@ from app.schemas.user import RegisterRequest, LoginRequest
 class NameValidator:
     @staticmethod
     def validate_name(name: str, field: str, errors: ValidationErrors):
+        if not name or not name.strip():
+            errors.add(field, f"{field.replace('_', ' ').title()} cannot be empty")
+            return
         if len(name.strip()) < 2:
             errors.add(field, f"{field.replace('_', ' ').title()} must be at least 2 characters")
-        if not name.replace(" ", "").isalpha():
-            errors.add(field, f"{field.replace('_', ' ').title()} can only contain letters")
+        if len(name.strip()) > 50:
+            errors.add(field, f"{field.replace('_', ' ').title()} must be at most 50 characters")
+        
+        import re
+        if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']+$", name.strip()):
+            errors.add(field, f"{field.replace('_', ' ').title()} can only contain letters, spaces, hyphens, and apostrophes")
 
 
 class RegistrationValidator:
