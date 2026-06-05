@@ -125,6 +125,9 @@ class EventService:
         remaining = await self.event_repo.get_remaining_capacity(updated.id)
         return self._to_response(updated, remaining)
 
+    async def list_calendar_dates(self, year: int, month: int) -> list[dict]:
+        return await self.event_repo.get_calendar_dates(year, month)
+
     async def delete_event(self, event_id: UUID) -> None:
         event = await self.event_repo.get_by_id(event_id)
         if not event:

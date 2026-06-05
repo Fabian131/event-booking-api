@@ -9,7 +9,7 @@ from app.api.deps import require_business_user
 from app.domain.models import User
 from app.repositories.event_repository import EventRepository
 from app.services.event_service import EventService
-from app.schemas.event import CreateEventRequest, UpdateEventRequest, EventResponse, EventCategory
+from app.schemas.event import CreateEventRequest, UpdateEventRequest, EventResponse, EventCategory, CalendarDatesResponse
 from app.schemas.common import PaginatedResponse, PaginationMeta, ValidationError
 
 router = APIRouter(prefix="/events", tags=["Events"])
@@ -17,6 +17,23 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 def get_event_service(db: AsyncSession = Depends(get_db)) -> EventService:
     return EventService(EventRepository(db))
+
+
+@router.get(
+    "/calendar",
+    response_model=CalendarDatesResponse,
+    responses={
+        422: {"model": ValidationError, "description": "Invalid year or month"},
+        500: {"description": "Unexpected server error"},
+    },
+)
+async def list_calendar_dates(
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    event_service: EventService = Depends(get_event_service),
+):
+    dates = await event_service.list_calendar_dates(year, month)
+    return CalendarDatesResponse(data=dates, year=year, month=month)
 
 
 @router.get("", response_model=PaginatedResponse[EventResponse])

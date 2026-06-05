@@ -53,3 +53,14 @@ class EventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CalendarDateItem(BaseModel):
+    date: date
+    count: int
+
+
+class CalendarDatesResponse(BaseModel):
+    data: list[CalendarDateItem]
+    year: int
+    month: int

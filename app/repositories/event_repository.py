@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import select, and_, or_, func, extract
 from uuid import UUID
 from datetime import date, time
 from app.domain.models import Event, Reservation
@@ -97,3 +97,17 @@ class EventRepository(BaseRepository[Event]):
         result = await self.db.execute(query)
         booked = result.scalar()
         return event.max_capacity - booked
+
+    async def get_calendar_dates(self, year: int, month: int) -> list[dict]:
+        query = (
+            select(Event.date, func.count(Event.id).label("count"))
+            .where(
+                extract("year", Event.date) == year,
+                extract("month", Event.date) == month,
+                Event.is_active == True,
+            )
+            .group_by(Event.date)
+            .order_by(Event.date.asc())
+        )
+        result = await self.db.execute(query)
+        return [{"date": row.date, "count": row.count} for row in result.all()]
