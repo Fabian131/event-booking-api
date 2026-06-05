@@ -104,6 +104,14 @@ components:
           type: string
           format: date
           example: "2026-07-15"
+        event_start_time:
+          type: string
+          format: time
+          example: "10:00:00"
+        event_end_time:
+          type: string
+          format: time
+          example: "18:00:00"
         ticket_quantity:
           type: integer
           example: 2

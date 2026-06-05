@@ -44,16 +44,28 @@ components:
         id:
           type: string
           format: uuid
-        full_name:
+        first_name:
           type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
         email:
           type: string
           format: email
+          example: "john.doe@example.com"
         phone:
           type: string
           nullable: true
+          example: "61101461"
+        role:
+          type: string
+          enum: [business, customer]
+          description: "User role for application authorization and routing"
+          example: "customer"
         is_active:
           type: boolean
+          example: true
         created_at:
           type: string
           format: date-time

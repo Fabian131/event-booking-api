@@ -121,6 +121,10 @@ components:
           type: string
           format: time
           example: "10:00:00"
+        event_end_time:
+          type: string
+          format: time
+          example: "18:00:00"
         ticket_quantity:
           type: integer
           example: 2
@@ -131,12 +135,29 @@ components:
         notes:
           type: string
           nullable: true
+        user:
+          $ref: '#/components/schemas/ReservationUserContext'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    ReservationUserContext:
+      type: object
+      description: "User context block containing customer profile details"
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          example: "Jane Doe"
+        user_email:
+          type: string
+          format: email
+          example: "jane.doe@example.com"
 
     ErrorResponse:
       type: object
