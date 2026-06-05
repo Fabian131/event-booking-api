@@ -2,12 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, dev ]
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      contracts: ${{ steps.filter.outputs.contracts }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          contracts:
+            - 'Contracts/**'
+
   test:
+    needs: detect-changes
     runs-on: ubuntu-latest
     
     services:
@@ -62,3 +78,30 @@ jobs:
       with:
         file: ./coverage.xml
         fail_ci_if_error: false
+
+  sync-contracts:
+    needs: detect-changes
+    if: github.event_name == 'push' && needs.detect-changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/checkout@v4
+      with:
+        repository: Fabian131/event-booking-mobile
+        ref: dev
+        token: ${{ secrets.FRONTEND_SYNC_PAT }}
+        path: mobile-repo
+
+    - name: Copy contracts to frontend
+      run: |
+        rm -f mobile-repo/event-booking/api-contracts/*.yaml
+        cp Contracts/*.yaml mobile-repo/event-booking/api-contracts/
+
+    - name: Push to frontend
+      working-directory: mobile-repo
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add event-booking/api-contracts/
+        git diff --staged --quiet || (git commit -m "chore: sync API contracts from backend" && git push origin dev)
