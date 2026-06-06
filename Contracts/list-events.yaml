@@ -90,6 +90,18 @@ components:
 
     EventSummary:
       type: object
+      required:
+        - id
+        - title
+        - max_capacity
+        - remaining_capacity
+        - category
+        - date
+        - start_time
+        - end_time
+        - is_active
+        - created_at
+        - updated_at
       properties:
         id:
           type: string
@@ -130,6 +142,14 @@ components:
         is_active:
           type: boolean
           example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-01T14:30:00+00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-06-01T14:30:00+00:00"
 
     PaginationMeta:
       type: object
