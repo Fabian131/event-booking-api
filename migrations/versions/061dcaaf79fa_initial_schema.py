@@ -24,7 +24,7 @@ def upgrade() -> None:
     sa.Column('title', sa.String(length=150), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('location', sa.String(length=100), nullable=False),
-    sa.Column('max_capacity', sa.SmallInteger(), nullable=False),
+    sa.Column('max_capacity', sa.Integer(), nullable=False),
     sa.Column('category', sa.String(length=50), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
