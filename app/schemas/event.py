@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Union
+from typing import Optional
 from datetime import datetime, date, time
 from uuid import UUID
 from enum import Enum
@@ -29,11 +29,11 @@ class UpdateEventRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=3, max_length=64)
     description: Optional[str] = Field(None, max_length=255)
     max_capacity: Optional[int] = Field(None, ge=1, le=9999999)
-    category: Union[EventCategory, None] = None
-    date: Union[date, None] = None
-    start_time: Union[time, None] = None
-    end_time: Union[time, None] = None
-    is_active: Union[bool, None] = None
+    category: Optional[EventCategory] = None
+    date: Optional[date] = None
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    is_active: Optional[bool] = None
 
 
 class EventResponse(BaseModel):

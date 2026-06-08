@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
@@ -125,33 +125,22 @@ async def get_event(event_id: UUID, event_service: EventService = Depends(get_ev
 )
 async def update_event(
     event_id: UUID,
-    title: Optional[str] = Form(None),
-    max_capacity: Optional[int] = Form(None),
-    category: Optional[EventCategory] = Form(None),
-    date: Optional[date_type] = Form(None),
-    start_time: Optional[time_type] = Form(None),
-    end_time: Optional[time_type] = Form(None),
-    description: Optional[str] = Form(None),
-    is_active: Optional[bool] = Form(None),
-    image: UploadFile = File(default=None),
+    req: Request,
     current_user: User = Depends(require_business_user),
     event_service: EventService = Depends(get_event_service),
 ):
     errors = ValidationErrors()
-    raw_fields = {
-        "title": title,
-        "description": description,
-        "max_capacity": max_capacity,
-        "category": category,
-        "date": date,
-        "start_time": start_time,
-        "end_time": end_time,
-        "is_active": is_active,
-    }
+    form = await req.form()
     form_data: dict = {}
-    for key, val in raw_fields.items():
-        if val is not None:
-            form_data[key] = str(val)
+    for key in (
+        "title", "description", "max_capacity", "category",
+        "date", "start_time", "end_time", "is_active",
+    ):
+        val = form.get(key)
+        if val is not None and val != "":
+            form_data[key] = val
+    image = form.get("image")
+
     request = UpdateEventRequest(**form_data)
     try:
         return await event_service.update_event(event_id, request, errors, image)
