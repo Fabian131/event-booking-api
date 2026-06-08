@@ -138,23 +138,20 @@ async def update_event(
     event_service: EventService = Depends(get_event_service),
 ):
     errors = ValidationErrors()
+    raw_fields = {
+        "title": title,
+        "description": description,
+        "max_capacity": max_capacity,
+        "category": category,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "is_active": is_active,
+    }
     form_data: dict = {}
-    if title is not None:
-        form_data["title"] = title
-    if description is not None:
-        form_data["description"] = description
-    if max_capacity is not None:
-        form_data["max_capacity"] = max_capacity
-    if category is not None:
-        form_data["category"] = category
-    if date is not None:
-        form_data["date"] = date
-    if start_time is not None:
-        form_data["start_time"] = start_time
-    if end_time is not None:
-        form_data["end_time"] = end_time
-    if is_active is not None:
-        form_data["is_active"] = is_active
+    for key, val in raw_fields.items():
+        if val is not None:
+            form_data[key] = str(val)
     request = UpdateEventRequest(**form_data)
     try:
         return await event_service.update_event(event_id, request, errors, image)
