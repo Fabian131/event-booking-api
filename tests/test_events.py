@@ -108,6 +108,44 @@ async def test_update_and_delete_event_forbidden_for_customer(client: AsyncClien
 
 
 @pytest.mark.asyncio
+async def test_update_event_success_with_business_form_data(client: AsyncClient, create_user):
+    await create_user(
+        email="business-update@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="Updater",
+    )
+    headers = await _login_headers(client, "business-update@example.com")
+    event_response = await _create_event(client, headers)
+    event_id = event_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/events/{event_id}",
+        data={
+            "title": "Updated Event",
+            "description": "Updated Description",
+            "max_capacity": "120",
+            "category": "culture",
+            "date": "2026-12-16",
+            "start_time": "15:00:00",
+            "end_time": "19:00:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Updated Event"
+    assert data["description"] == "Updated Description"
+    assert data["max_capacity"] == 120
+    assert data["category"] == "culture"
+    assert data["date"] == "2026-12-16"
+    assert data["start_time"] == "15:00:00"
+    assert data["end_time"] == "19:00:00"
+
+
+@pytest.mark.asyncio
 async def test_list_events(client: AsyncClient):
     response = await client.get("/api/v1/events")
 

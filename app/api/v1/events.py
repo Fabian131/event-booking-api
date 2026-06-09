@@ -138,7 +138,7 @@ async def update_event(
     ):
         val = form.get(key)
         if val is not None and val != "":
-            form_data[key] = val
+            form_data[key] = str(val)
     image = form.get("image")
 
     request = UpdateEventRequest(**form_data)

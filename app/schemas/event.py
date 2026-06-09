@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime, date, time
+from datetime import datetime, date as date_type, time as time_type
 from uuid import UUID
 from enum import Enum
 
@@ -20,9 +20,9 @@ class CreateEventRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=255)
     max_capacity: int = Field(..., ge=1, le=9999999)
     category: EventCategory
-    date: date
-    start_time: time
-    end_time: time
+    date: date_type
+    start_time: time_type
+    end_time: time_type
 
 
 class UpdateEventRequest(BaseModel):
@@ -30,9 +30,9 @@ class UpdateEventRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=255)
     max_capacity: Optional[int] = Field(None, ge=1, le=9999999)
     category: Optional[EventCategory] = None
-    date: Optional[date] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
+    date: Optional[date_type] = None
+    start_time: Optional[time_type] = None
+    end_time: Optional[time_type] = None
     is_active: Optional[bool] = None
 
 
@@ -44,9 +44,9 @@ class EventResponse(BaseModel):
     max_capacity: int
     remaining_capacity: int
     category: str
-    date: date
-    start_time: time
-    end_time: time
+    date: date_type
+    start_time: time_type
+    end_time: time_type
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -56,7 +56,7 @@ class EventResponse(BaseModel):
 
 
 class CalendarDateItem(BaseModel):
-    date: date
+    date: date_type
     count: int
 
 
