@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
@@ -13,6 +14,30 @@ from app.schemas.event import CreateEventRequest, UpdateEventRequest, EventRespo
 from app.schemas.common import PaginatedResponse, PaginationMeta, ValidationError
 
 router = APIRouter(prefix="/events", tags=["Events"])
+
+
+def validation_response(status_code: int, details: list[dict], error: str = "validation_error", message: str = "One or more validation errors occurred") -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": error,
+            "message": message,
+            "details": details,
+        },
+    )
+
+
+def schedule_conflict_response(details: list[dict]) -> JSONResponse:
+    message = next(
+        (d.get("message") for d in details if d.get("field") == "schedule"),
+        "An event already occupies this date and time slot",
+    )
+    return validation_response(
+        status.HTTP_409_CONFLICT,
+        details,
+        error="schedule_conflict",
+        message=message,
+    )
 
 
 def get_event_service(db: AsyncSession = Depends(get_db)) -> EventService:
@@ -97,8 +122,8 @@ async def create_event(
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "schedule" for d in detail):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+            return schedule_conflict_response(detail)
+        return validation_response(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
 
 
 @router.get(
@@ -110,7 +135,7 @@ async def get_event(event_id: UUID, event_service: EventService = Depends(get_ev
     try:
         return await event_service.get_event(event_id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])
+        return validation_response(status.HTTP_404_NOT_FOUND, e.args[0])
 
 
 @router.put(
@@ -147,10 +172,10 @@ async def update_event(
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "event_id" for d in detail):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+            return validation_response(status.HTTP_404_NOT_FOUND, detail)
         if any(d.get("field") == "schedule" for d in detail):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+            return schedule_conflict_response(detail)
+        return validation_response(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
 
 
 @router.delete(

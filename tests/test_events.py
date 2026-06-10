@@ -146,6 +146,105 @@ async def test_update_event_success_with_business_form_data(client: AsyncClient,
 
 
 @pytest.mark.asyncio
+async def test_update_event_accepts_max_capacity_limit(client: AsyncClient, create_user):
+    await create_user(
+        email="business-capacity@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="Capacity",
+    )
+    headers = await _login_headers(client, "business-capacity@example.com")
+    event_response = await _create_event(client, headers)
+    event_id = event_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/events/{event_id}",
+        data={"max_capacity": "9999999"},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["max_capacity"] == 9999999
+
+
+def _assert_schedule_conflict_response(response):
+    assert response.status_code == 409
+    data = response.json()
+    assert data["error"] == "schedule_conflict"
+    assert data["message"] == "An event already occupies this date and time slot"
+    assert data["details"] == [
+        {"field": "schedule", "message": "An event already occupies this date and time slot"}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_create_event_schedule_conflict_response_format(client: AsyncClient, create_user):
+    await create_user(
+        email="business-create-conflict@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="CreateConflict",
+    )
+    headers = await _login_headers(client, "business-create-conflict@example.com")
+    await _create_event(client, headers, title="Original Event")
+
+    response = await client.post(
+        "/api/v1/events",
+        data={
+            "title": "Overlapping Event",
+            "max_capacity": 20,
+            "category": "sports",
+            "date": "2026-12-15",
+            "start_time": "15:00:00",
+            "end_time": "17:00:00",
+        },
+        headers=headers,
+    )
+
+    _assert_schedule_conflict_response(response)
+
+
+@pytest.mark.asyncio
+async def test_update_event_schedule_conflict_response_format(client: AsyncClient, create_user):
+    await create_user(
+        email="business-update-conflict@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="UpdateConflict",
+    )
+    headers = await _login_headers(client, "business-update-conflict@example.com")
+    await _create_event(client, headers, title="Original Event")
+    other_event_response = await client.post(
+        "/api/v1/events",
+        data={
+            "title": "Other Event",
+            "max_capacity": 20,
+            "category": "sports",
+            "date": "2026-12-15",
+            "start_time": "19:00:00",
+            "end_time": "21:00:00",
+        },
+        headers=headers,
+    )
+    other_event_id = other_event_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/events/{other_event_id}",
+        data={
+            "date": "2026-12-15",
+            "start_time": "15:00:00",
+            "end_time": "17:00:00",
+        },
+        headers=headers,
+    )
+
+    _assert_schedule_conflict_response(response)
+
+
+@pytest.mark.asyncio
 async def test_list_events(client: AsyncClient):
     response = await client.get("/api/v1/events")
 

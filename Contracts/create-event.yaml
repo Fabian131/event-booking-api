@@ -44,10 +44,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ValidationError'
               example:
                 error: "schedule_conflict"
                 message: "An event already occupies this date and time slot"
+                details:
+                  - field: "schedule"
+                    message: "An event already occupies this date and time slot"
         '422':
           description: Validation failed
           content:
