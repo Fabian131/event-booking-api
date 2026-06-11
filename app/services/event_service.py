@@ -1,5 +1,7 @@
 from uuid import UUID
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
+
+CR_TZ = timezone(timedelta(hours=-6))
 from fastapi import UploadFile
 from app.core.validation import ValidationErrors
 from app.core.cloudinary import upload_event_image, delete_event_image
@@ -20,8 +22,13 @@ class EventValidator:
             if request.end_time <= request.start_time:
                 errors.add("end_time", "end_time must be after start_time")
         if hasattr(request, 'date') and request.date is not None:
-            if request.date < date.today():
+            today_cr = datetime.now(CR_TZ).date()
+            if request.date < today_cr:
                 errors.add("date", "Event date cannot be in the past")
+            elif request.date == today_cr and hasattr(request, 'start_time') and request.start_time is not None:
+                now_cr = datetime.now(CR_TZ).time()
+                if request.start_time <= now_cr:
+                    errors.add("start_time", "Event start time cannot be in the past")
         if request.max_capacity is not None:
             if request.max_capacity <= 0:
                 errors.add("max_capacity", "Capacity must be greater than 0")
