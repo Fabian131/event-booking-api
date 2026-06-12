@@ -1,9 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+<<<<<<< Updated upstream
+from sqlalchemy import select, func, and_, or_
+=======
 from sqlalchemy import select, func, and_, or_, extract
 from sqlalchemy.orm import selectinload
+>>>>>>> Stashed changes
 from uuid import UUID
-from datetime import date
-from app.domain.models import Reservation, User, Event
+from app.domain.models import Reservation, User
 from app.repositories.base_repository import BaseRepository
 
 
@@ -27,14 +30,20 @@ class ReservationRepository(BaseRepository[Reservation]):
         )
         return result.scalar_one_or_none()
 
+<<<<<<< Updated upstream
+    async def get_by_user(self, user_id: UUID, offset: int = 0, limit: int = 20, status_filter: str | None = None) -> list[Reservation]:
+        query = select(Reservation).where(Reservation.user_id == user_id)
+=======
     async def get_by_user(
         self,
         user_id: UUID,
         offset: int = 0,
         limit: int = 20,
         status_filter: str | None = None,
+        event_date: date | None = None,
     ) -> list[Reservation]:
-        query = select(Reservation).where(Reservation.user_id == user_id)
+        query = select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == user_id)
+>>>>>>> Stashed changes
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         query = query.order_by(Reservation.created_at.desc())
@@ -42,11 +51,7 @@ class ReservationRepository(BaseRepository[Reservation]):
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def count_by_user(
-        self,
-        user_id: UUID,
-        status_filter: str | None = None,
-    ) -> int:
+    async def count_by_user(self, user_id: UUID, status_filter: str | None = None) -> int:
         query = select(func.count()).select_from(Reservation).where(Reservation.user_id == user_id)
         if status_filter:
             query = query.where(Reservation.status == status_filter)
@@ -61,12 +66,7 @@ class ReservationRepository(BaseRepository[Reservation]):
         status_filter: str | None = None,
         search: str | None = None,
     ) -> list[Reservation]:
-        query = (
-            select(Reservation)
-            .options(selectinload(Reservation.user))
-            .join(User, Reservation.user_id == User.id)
-            .where(Reservation.event_id == event_id)
-        )
+        query = select(Reservation).options(selectinload(Reservation.user)).join(User, Reservation.user_id == User.id).where(Reservation.event_id == event_id)
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         if search:
@@ -83,18 +83,8 @@ class ReservationRepository(BaseRepository[Reservation]):
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def count_by_event(
-        self,
-        event_id: UUID,
-        status_filter: str | None = None,
-        search: str | None = None,
-    ) -> int:
-        query = (
-            select(func.count())
-            .select_from(Reservation)
-            .join(User, Reservation.user_id == User.id)
-            .where(Reservation.event_id == event_id)
-        )
+    async def count_by_event(self, event_id: UUID, status_filter: str | None = None, search: str | None = None) -> int:
+        query = select(func.count()).select_from(Reservation).join(User, Reservation.user_id == User.id).where(Reservation.event_id == event_id)
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         if search:
@@ -118,19 +108,3 @@ class ReservationRepository(BaseRepository[Reservation]):
         )
         result = await self.db.execute(query)
         return result.scalar()
-
-    async def get_calendar_dates(self, user_id: UUID, year: int, month: int) -> list[dict]:
-        query = (
-            select(Event.date, func.count(Reservation.id).label("count"))
-            .join(Event, Reservation.event_id == Event.id)
-            .where(
-                Reservation.user_id == user_id,
-                Reservation.status == "CONFIRMED",
-                extract("year", Event.date) == year,
-                extract("month", Event.date) == month,
-            )
-            .group_by(Event.date)
-            .order_by(Event.date.asc())
-        )
-        result = await self.db.execute(query)
-        return [{"date": row.date, "count": row.count} for row in result.all()]

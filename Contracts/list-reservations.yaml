@@ -37,13 +37,6 @@ paths:
           example: "CONFIRMED"
           description: "Optional status filter (reservations are created as CONFIRMED directly)."
         - in: query
-          name: date
-          schema:
-            type: string
-            format: date
-          example: "2026-07-15"
-          description: "Optional date filter: filter reservations by the date of their corresponding event."
-        - in: query
           name: page
           schema:
             type: integer
