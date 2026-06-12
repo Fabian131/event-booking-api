@@ -29,7 +29,6 @@ services:
       - ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME}
       - ADMIN_LAST_NAME=${ADMIN_LAST_NAME}
       - ADMIN_PHONE=${ADMIN_PHONE}
-      - EXPO_ACCESS_TOKEN=${EXPO_ACCESS_TOKEN}
     depends_on:
       db:
         condition: service_healthy

@@ -31,9 +31,6 @@ class Settings(BaseSettings):
     ADMIN_FIRST_NAME: str = "Admin"
     ADMIN_LAST_NAME: str = "System"
     ADMIN_PHONE: str = "12345678"
-
-    # Expo Push Notifications (optional — works without token in dev)
-    EXPO_ACCESS_TOKEN: str = ""
     
     class Config:
         env_file = ".env"

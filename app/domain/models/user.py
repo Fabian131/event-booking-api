@@ -18,7 +18,6 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    expo_push_token: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
 
     reservations: Mapped[list["Reservation"]] = relationship("Reservation", back_populates="user", lazy="selectin")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", lazy="selectin")

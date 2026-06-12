@@ -7,11 +7,10 @@ from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.reservation import CreateReservationRequest, ReservationStatus, ReservationResponse, ReservationUserContext
-from app.services.expo_push_service import expo_push_service
 
 
 class ReservationService:
-    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository, user_repo: UserRepository | None = None):
         self.reservation_repo = reservation_repo
         self.event_repo = event_repo
         self.notification_repo = notification_repo
@@ -151,16 +150,3 @@ class ReservationService:
             reservation_id=reservation.id,
             event_id=event.id if event else None,
         )
-
-        user = await self.user_repo.get_by_id(user_id)
-        if user and user.expo_push_token:
-            await expo_push_service.send(
-                to=user.expo_push_token,
-                title=title,
-                body=message,
-                data={
-                    "type": ntype,
-                    "reservation_id": str(reservation.id),
-                    "event_id": str(event.id) if event else None,
-                },
-            )
