@@ -76,7 +76,7 @@ async def test_create_reservation_success(client: AsyncClient, create_user):
     assert response.status_code == 201
     data = response.json()
     assert data["ticket_quantity"] == 2
-    assert data["status"] == "PENDING"
+    assert data["status"] == "CONFIRMED"
     assert data["event_id"] == event_id
     assert "user" in data
     assert data["user"]["user_email"] == "test@example.com"
@@ -125,3 +125,31 @@ async def test_cancel_reservation(client: AsyncClient, create_user):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "CANCELLED"
+
+
+@pytest.mark.asyncio
+async def test_cancel_reservation_updates_event_capacity(client: AsyncClient, create_user):
+    _, headers = await _create_authenticated_user(client)
+    business_headers = await _create_business_headers(client, create_user)
+    event_id = await _create_event(client, business_headers, max_capacity=10)
+
+    reservation_response = await client.post(
+        "/api/v1/reservations",
+        json={
+            "event_id": event_id,
+            "ticket_quantity": 3,
+        },
+        headers=headers,
+    )
+    reservation_id = reservation_response.json()["id"]
+
+    event_before = await client.get(f"/api/v1/events/{event_id}")
+    assert event_before.json()["remaining_capacity"] == 7
+
+    await client.patch(
+        f"/api/v1/reservations/{reservation_id}/cancel",
+        headers=headers,
+    )
+
+    event_after = await client.get(f"/api/v1/events/{event_id}")
+    assert event_after.json()["remaining_capacity"] == 10

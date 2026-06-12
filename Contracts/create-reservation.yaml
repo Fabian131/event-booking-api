@@ -11,7 +11,7 @@ paths:
         Secures ticket slots for an authenticated customer.
         Validates that `ticket_quantity` does not exceed the event's live
         `remaining_capacity`. Returns 409 if capacity is exceeded.
-        Created reservation starts in PENDING status.
+        Created reservation starts in CONFIRMED status immediately.
       security:
         - bearerAuth: []
       requestBody:
@@ -22,7 +22,7 @@ paths:
               $ref: '#/components/schemas/CreateReservationRequest'
       responses:
         '201':
-          description: Reservation created successfully (status = PENDING)
+          description: Reservation created successfully (status = CONFIRMED)
           content:
             application/json:
               schema:
@@ -130,8 +130,8 @@ components:
           example: 2
         status:
           type: string
-          enum: [PENDING, CONFIRMED, CANCELLED]
-          example: "PENDING"
+          enum: [CONFIRMED, CANCELLED]
+          example: "CONFIRMED"
         notes:
           type: string
           nullable: true

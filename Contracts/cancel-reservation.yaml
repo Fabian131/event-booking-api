@@ -8,7 +8,7 @@ paths:
     patch:
       summary: Cancel a reservation
       description: >
-        Cancels an active (PENDING or CONFIRMED) reservation.
+        Cancels an active (CONFIRMED) reservation.
         Automatically restores the freed ticket slots back into the event's
         `remaining_capacity` pool.
         Triggers a cancellation notification to the user.
@@ -97,7 +97,7 @@ components:
           example: 2
         status:
           type: string
-          enum: [PENDING, CONFIRMED, CANCELLED]
+          enum: [CONFIRMED, CANCELLED]
           example: "CANCELLED"
         notes:
           type: string

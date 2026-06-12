@@ -47,9 +47,9 @@ erDiagram
     RESERVATION {
         uuid id PK
         uuid user_id FK
-        uuid event_schedule_id FK
+        uuid event_id FK
         varchar(30) status
-        smallint quantity
+        smallint ticket_quantity
         text notes
         timestamptz created_at
         timestamptz updated_at
@@ -90,7 +90,6 @@ erDiagram
 
 | Current State | Allowed Transitions | Trigger |
 |---------------|---------------------|---------|
-| PENDING | CONFIRMED, CANCELLED | User action or timeout |
 | CONFIRMED | CANCELLED | User action |
 | CANCELLED | (final state) | - |
 
@@ -99,7 +98,7 @@ erDiagram
 | Rule ID | Description | Action |
 |---------|-------------|--------|
 | BR-008 | Cancellation restores available slots | Increment schedule.available_slots |
-| BR-009 | Only PENDING or CONFIRMED can be cancelled | Validate status before cancellation |
+| BR-009 | Only CONFIRMED can be cancelled | Validate status before cancellation |
 | BR-010 | Cancellation triggers notification | Create notification for user |
 
 ## Naming Conventions
@@ -170,7 +169,7 @@ CREATE INDEX idx_event_schedules_date_time ON event_schedules(schedule_date, sta
 
 -- Reservation queries
 CREATE INDEX idx_reservations_user_status ON reservations(user_id, status);
-CREATE INDEX idx_reservations_schedule_status ON reservations(event_schedule_id, status);
+CREATE INDEX idx_reservations_event_status ON reservations(event_id, status);
 CREATE INDEX idx_reservations_created_at ON reservations(created_at DESC);
 
 -- Notification queries
@@ -207,8 +206,8 @@ ALTER TABLE reservations
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT;
 
 ALTER TABLE reservations 
-    ADD CONSTRAINT fk_reservations_event_schedules 
-    FOREIGN KEY (event_schedule_id) REFERENCES event_schedules(id) ON DELETE RESTRICT;
+    ADD CONSTRAINT fk_reservations_events 
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT;
 
 ALTER TABLE notifications 
     ADD CONSTRAINT fk_notifications_users 
@@ -241,9 +240,9 @@ ALTER TABLE event_schedules
 
 ALTER TABLE reservations 
     ADD CONSTRAINT ck_reservations_quantity 
-    CHECK (quantity > 0);
+    CHECK (ticket_quantity > 0);
 
 ALTER TABLE reservations 
     ADD CONSTRAINT ck_reservations_status 
-    CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED'));
+    CHECK (status IN ('CONFIRMED', 'CANCELLED'));
 ```

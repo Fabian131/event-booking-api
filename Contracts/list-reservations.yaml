@@ -8,7 +8,8 @@ paths:
     get:
       summary: List reservations
       description: >
-        Dual-role endpoint.
+        Dual-role endpoint. Reservations are created directly in CONFIRMED state
+        (no pending/approval flow).
         - **Customer**: No `event_id` → returns "My Reservations" scoped to the token's user.
         - **Business admin**: Supply `event_id` to list all customer reservations for that event,
           including user names and emails for attendance tracking. Optionally filter by `search`.
@@ -32,8 +33,9 @@ paths:
           name: status
           schema:
             type: string
-            enum: [PENDING, CONFIRMED, CANCELLED]
+            enum: [CONFIRMED, CANCELLED]
           example: "CONFIRMED"
+          description: "Optional status filter (reservations are created as CONFIRMED directly)."
         - in: query
           name: page
           schema:
@@ -117,7 +119,7 @@ components:
           example: 2
         status:
           type: string
-          enum: [PENDING, CONFIRMED, CANCELLED]
+          enum: [CONFIRMED, CANCELLED]
           example: "CONFIRMED"
         notes:
           type: string

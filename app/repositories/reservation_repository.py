@@ -80,7 +80,7 @@ class ReservationRepository(BaseRepository[Reservation]):
         query = select(func.coalesce(func.sum(Reservation.ticket_quantity), 0)).where(
             and_(
                 Reservation.event_id == event_id,
-                Reservation.status.in_(["PENDING", "CONFIRMED"]),
+                Reservation.status == "CONFIRMED",
             )
         )
         result = await self.db.execute(query)

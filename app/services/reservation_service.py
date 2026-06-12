@@ -64,7 +64,7 @@ class ReservationService:
             raise ValueError(errors.to_response())
 
         existing = await self.reservation_repo.get_by_user_and_event(
-            user_id, request.event_id, ["PENDING", "CONFIRMED"]
+            user_id, request.event_id, ["CONFIRMED"]
         )
         if existing:
             raise ValueError([{"field": "event_id", "message": "You already have an active reservation for this event"}])
@@ -74,7 +74,7 @@ class ReservationService:
             event_id=request.event_id,
             ticket_quantity=request.ticket_quantity,
             notes=request.notes,
-            status=ReservationStatus.PENDING.value,
+            status=ReservationStatus.CONFIRMED.value,
         )
 
         await self._notify(user_id, reservation, event, "reservation_confirmed", "Reservation Confirmed",
