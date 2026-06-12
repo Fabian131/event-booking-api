@@ -17,8 +17,8 @@ class Reservation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    user: Mapped["User"] = relationship("User", back_populates="reservations")
-    event: Mapped["Event"] = relationship("Event", back_populates="reservations")
+    user: Mapped["User"] = relationship("User", back_populates="reservations", lazy="selectin")
+    event: Mapped["Event"] = relationship("Event", back_populates="reservations", lazy="selectin")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="reservation", lazy="selectin")
 
     __table_args__ = (
