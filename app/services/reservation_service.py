@@ -23,22 +23,26 @@ class ReservationService:
         status_filter: str | None,
         event_id: UUID | None = None,
         search: str | None = None,
+        event_date: date | None = None,
     ) -> tuple[list[dict], int]:
         offset = (page - 1) * limit
 
         if event_id and user_role == "business":
             reservations = await self.reservation_repo.get_by_event(
-                event_id, offset, limit, status_filter, search
+                event_id, offset, limit, status_filter, search, event_date
             )
-            total = await self.reservation_repo.count_by_event(event_id, status_filter, search)
+            total = await self.reservation_repo.count_by_event(event_id, status_filter, search, event_date)
         else:
-            reservations = await self.reservation_repo.get_by_user(user_id, offset, limit, status_filter)
-            total = await self.reservation_repo.count_by_user(user_id, status_filter)
+            reservations = await self.reservation_repo.get_by_user(user_id, offset, limit, status_filter, event_date)
+            total = await self.reservation_repo.count_by_user(user_id, status_filter, event_date)
 
         enriched = []
         for r in reservations:
             enriched.append(await self._to_response(r))
         return enriched, total
+
+    async def list_calendar_dates(self, user_id: UUID, year: int, month: int) -> list[dict]:
+        return await self.reservation_repo.get_calendar_dates(user_id, year, month)
 
     async def get_reservation(self, reservation_id: UUID, user_id: UUID, user_role: str) -> dict:
         reservation = await self.reservation_repo.get_by_id(reservation_id)
