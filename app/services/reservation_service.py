@@ -5,14 +5,16 @@ from app.domain.models import Reservation, Event
 from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.reservation import CreateReservationRequest, ReservationStatus, ReservationResponse, ReservationUserContext
 
 
 class ReservationService:
-    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository):
+    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository, user_repo: UserRepository | None = None):
         self.reservation_repo = reservation_repo
         self.event_repo = event_repo
         self.notification_repo = notification_repo
+        self.user_repo = user_repo
 
     async def list_reservations(
         self,
@@ -107,7 +109,17 @@ class ReservationService:
 
     async def _to_response(self, reservation: Reservation) -> dict:
         event = await self.event_repo.get_by_id(reservation.event_id)
-        user = reservation.user
+
+        # Fetch user explicitly via async query to avoid lazy-load in async context
+        user = None
+        if self.user_repo:
+            user = await self.user_repo.get_by_id(reservation.user_id)
+
+        user_data = {
+            "user_id": user.id if user else reservation.user_id,
+            "user_name": f"{user.first_name} {user.last_name}" if user else "",
+            "user_email": user.email if user else "",
+        }
 
         return {
             "id": reservation.id,
@@ -120,11 +132,7 @@ class ReservationService:
             "ticket_quantity": reservation.ticket_quantity,
             "status": reservation.status,
             "notes": reservation.notes,
-            "user": {
-                "user_id": user.id,
-                "user_name": f"{user.first_name} {user.last_name}",
-                "user_email": user.email,
-            },
+            "user": user_data,
             "created_at": reservation.created_at,
             "updated_at": reservation.updated_at,
         }

@@ -1,5 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+<<<<<<< Updated upstream
 from sqlalchemy import select, func, and_, or_
+=======
+from sqlalchemy import select, func, and_, or_, extract
+from sqlalchemy.orm import selectinload
+>>>>>>> Stashed changes
 from uuid import UUID
 from app.domain.models import Reservation, User
 from app.repositories.base_repository import BaseRepository
@@ -8,6 +13,12 @@ from app.repositories.base_repository import BaseRepository
 class ReservationRepository(BaseRepository[Reservation]):
     def __init__(self, db: AsyncSession):
         super().__init__(Reservation, db)
+
+    async def get_by_id(self, reservation_id: UUID) -> Reservation | None:
+        result = await self.db.execute(
+            select(Reservation).options(selectinload(Reservation.user)).where(Reservation.id == reservation_id)
+        )
+        return result.scalar_one_or_none()
 
     async def get_by_user_and_event(self, user_id: UUID, event_id: UUID, statuses: list[str]) -> Reservation | None:
         result = await self.db.execute(
@@ -19,8 +30,20 @@ class ReservationRepository(BaseRepository[Reservation]):
         )
         return result.scalar_one_or_none()
 
+<<<<<<< Updated upstream
     async def get_by_user(self, user_id: UUID, offset: int = 0, limit: int = 20, status_filter: str | None = None) -> list[Reservation]:
         query = select(Reservation).where(Reservation.user_id == user_id)
+=======
+    async def get_by_user(
+        self,
+        user_id: UUID,
+        offset: int = 0,
+        limit: int = 20,
+        status_filter: str | None = None,
+        event_date: date | None = None,
+    ) -> list[Reservation]:
+        query = select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == user_id)
+>>>>>>> Stashed changes
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         query = query.order_by(Reservation.created_at.desc())
@@ -43,7 +66,7 @@ class ReservationRepository(BaseRepository[Reservation]):
         status_filter: str | None = None,
         search: str | None = None,
     ) -> list[Reservation]:
-        query = select(Reservation).join(User, Reservation.user_id == User.id).where(Reservation.event_id == event_id)
+        query = select(Reservation).options(selectinload(Reservation.user)).join(User, Reservation.user_id == User.id).where(Reservation.event_id == event_id)
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         if search:

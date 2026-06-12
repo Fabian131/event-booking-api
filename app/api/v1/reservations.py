@@ -9,6 +9,7 @@ from app.domain.models import User
 from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
+from app.repositories.user_repository import UserRepository
 from app.services.reservation_service import ReservationService
 from app.schemas.reservation import CreateReservationRequest, ReservationResponse, ReservationStatus
 from app.schemas.common import PaginatedResponse, PaginationMeta, ValidationError
@@ -21,6 +22,7 @@ def get_reservation_service(db: AsyncSession = Depends(get_db)) -> ReservationSe
         ReservationRepository(db),
         EventRepository(db),
         NotificationRepository(db),
+        UserRepository(db),
     )
 
 
