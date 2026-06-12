@@ -12,8 +12,8 @@ erDiagram
     
     USER {
         uuid id PK
-        varchar(100) first_name
-        varchar(100) last_name
+        varchar(50) first_name
+        varchar(50) last_name
         varchar(150) email UK
         varchar(20) phone UK
         varchar(255) password_hash
@@ -24,10 +24,9 @@ erDiagram
     
     EVENT {
         uuid id PK
-        varchar(150) title
+        varchar(64) title
         text description
-        varchar(100) location
-        smallint max_capacity
+        integer max_capacity
         varchar(50) category
         boolean is_active
         timestamptz created_at
@@ -49,7 +48,7 @@ erDiagram
         uuid user_id FK
         uuid event_id FK
         varchar(30) status
-        smallint ticket_quantity
+        integer ticket_quantity
         text notes
         timestamptz created_at
         timestamptz updated_at
@@ -206,7 +205,7 @@ ALTER TABLE reservations
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT;
 
 ALTER TABLE reservations 
-    ADD CONSTRAINT fk_reservations_events 
+    ADD CONSTRAINT fk_reservations_event_id 
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT;
 
 ALTER TABLE notifications 
@@ -239,7 +238,7 @@ ALTER TABLE event_schedules
     CHECK (available_slots >= 0);
 
 ALTER TABLE reservations 
-    ADD CONSTRAINT ck_reservations_quantity 
+    ADD CONSTRAINT ck_reservations_ticket_quantity 
     CHECK (ticket_quantity > 0);
 
 ALTER TABLE reservations 
