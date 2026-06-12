@@ -30,8 +30,8 @@ class EventRepository(BaseRepository[Event]):
             search_pattern = f"%{search}%"
             query = query.where(
                 or_(
-                    Event.title.ilike(search_pattern),
-                    Event.description.ilike(search_pattern),
+                    func.unaccent(Event.title).ilike(func.unaccent(search_pattern)),
+                    func.unaccent(Event.description).ilike(func.unaccent(search_pattern)),
                 )
             )
         query = query.order_by(Event.date.desc(), Event.start_time.asc())
@@ -57,8 +57,8 @@ class EventRepository(BaseRepository[Event]):
             search_pattern = f"%{search}%"
             query = query.where(
                 or_(
-                    Event.title.ilike(search_pattern),
-                    Event.description.ilike(search_pattern),
+                    func.unaccent(Event.title).ilike(func.unaccent(search_pattern)),
+                    func.unaccent(Event.description).ilike(func.unaccent(search_pattern)),
                 )
             )
         result = await self.db.execute(query)
