@@ -1,5 +1,7 @@
 from uuid import UUID
 from datetime import date
+from fastapi import BackgroundTasks
+from app.services.email_service import email_service
 from app.core.validation import ValidationErrors
 from app.domain.models import Reservation, Event
 from app.repositories.reservation_repository import ReservationRepository
@@ -85,7 +87,7 @@ class ReservationService:
                            f"Your reservation for {event.title} has been confirmed.")
         return await self._to_response(reservation)
 
-    async def cancel_reservation(self, reservation_id: UUID, user_id: UUID, user_role: str) -> dict:
+    async def cancel_reservation(self, reservation_id: UUID, user_id: UUID, user_role: str, background_tasks: BackgroundTasks) -> dict:
         reservation = await self.reservation_repo.get_by_id(reservation_id)
         if not reservation:
             raise ValueError([{"field": "reservation_id", "message": "Reservation not found"}])
@@ -101,6 +103,20 @@ class ReservationService:
         event = await self.event_repo.get_by_id(reservation.event_id)
         await self._notify(reservation.user_id, reservation, event, "reservation_cancelled", "Reservation Cancelled",
                            f"Your reservation for {event.title} has been cancelled.")
+        
+        # Schedule email notification
+        # In SQLAlchemy async, we might need to ensure user is loaded or use the user_repo, 
+        # but _to_response successfully accesses reservation.user, assuming it's joined.
+        # However, to be safe, we extract from _to_response or rely on reservation.user.
+        user = reservation.user
+        if user and user.email:
+            background_tasks.add_task(
+                email_service.send_reservation_cancelled_email,
+                to_email=user.email,
+                user_name=f"{user.first_name} {user.last_name}",
+                event_title=event.title if event else "Unknown Event"
+            )
+
         return await self._to_response(reservation)
 
     async def _get_event(self, event_id: UUID) -> Event:

@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     ADMIN_FIRST_NAME: str = "Admin"
     ADMIN_LAST_NAME: str = "System"
     ADMIN_PHONE: str = "12345678"
+
+    # SMTP Configuration
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
     
     class Config:
         env_file = ".env"
