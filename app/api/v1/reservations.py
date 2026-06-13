@@ -1,8 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
-<<<<<<< Updated upstream
-=======
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import JSONResponse
->>>>>>> Stashed changes
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
@@ -134,12 +131,11 @@ async def get_reservation(
 )
 async def cancel_reservation(
     reservation_id: UUID,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     reservation_service: ReservationService = Depends(get_reservation_service),
 ):
     try:
-        return await reservation_service.cancel_reservation(reservation_id, current_user.id, current_user.role, background_tasks)
+        return await reservation_service.cancel_reservation(reservation_id, current_user.id, current_user.role)
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "reservation_id" for d in detail):
