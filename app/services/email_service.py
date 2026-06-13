@@ -25,8 +25,19 @@ class EmailService:
         event_date: str,
         ticket_quantity: int,
     ) -> None:
-        subject = f"Reservacion Cancelada - {event_title}"
+        subject = f"Reservación Cancelada - {event_title}"
         body = self._build_cancellation_body(user_name, event_title, event_date, ticket_quantity)
+        await self._send_email(to_email, subject, body)
+
+    async def send_event_cancelled_email(
+        self,
+        to_email: str,
+        user_name: str,
+        event_title: str,
+        event_date: str,
+    ) -> None:
+        subject = f"Evento Cancelado - {event_title}"
+        body = self._build_event_cancellation_body(user_name, event_title, event_date)
         await self._send_email(to_email, subject, body)
 
     async def _send_email(self, to_email: str, subject: str, html_body: str) -> None:
@@ -160,3 +171,91 @@ class EmailService:
         </body>
         </html>
         """
+
+    def _build_event_cancellation_body(
+        self,
+        user_name: str,
+        event_title: str,
+        event_date: str,
+    ) -> str:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Evento Cancelado</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    background-color: #0082A8;
+                    color: #ffffff;
+                    padding: 20px;
+                    text-align: center;
+                }}
+                .header h1 {{
+                    margin: 0;
+                    font-size: 24px;
+                }}
+                .content {{
+                    padding: 30px 20px;
+                    color: #333333;
+                    line-height: 1.6;
+                }}
+                .content h2 {{
+                    color: #0082A8;
+                }}
+                .warning {{
+                    background-color: #fff3cd;
+                    border: 1px solid #ffc107;
+                    border-radius: 6px;
+                    padding: 15px;
+                    margin: 20px 0;
+                    color: #856404;
+                }}
+                .footer {{
+                    background-color: #f4f4f4;
+                    color: #777777;
+                    text-align: center;
+                    padding: 15px;
+                    font-size: 12px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Event Booking</h1>
+                </div>
+                <div class="content">
+                    <h2>Hola, {user_name}</h2>
+                    <p>Lamentamos informarte que el evento <strong>{event_title}</strong> programado para el <strong>{event_date}</strong> ha sido cancelado por el organizador.</p>
+                    <div class="warning">
+                        <p><strong>Importante:</strong> Esta cancelación es definitiva. El evento ha sido eliminado y tu reservación ya no es válida.</p>
+                    </div>
+                    <p>Si tenías una reservación confirmada, esta ha sido cancelada automáticamente. No es necesario que realices ninguna acción adicional.</p>
+                    <p>Si tienes preguntas o necesitas asistencia, por favor contacta al organizador del evento.</p>
+                    <p>Disculpa las molestias ocasionadas.</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2026 Event Booking. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+
+email_service = EmailService()

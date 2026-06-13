@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, extract
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 from datetime import date
 from app.domain.models import Reservation, User, Event
@@ -28,7 +29,7 @@ class ReservationRepository(BaseRepository[Reservation]):
         status_filter: str | None = None,
         event_date: date | None = None,
     ) -> list[Reservation]:
-        query = select(Reservation).where(Reservation.user_id == user_id)
+        query = select(Reservation).options(selectinload(Reservation.user)).where(Reservation.user_id == user_id)
         if status_filter:
             query = query.where(Reservation.status == status_filter)
         if event_date:
@@ -103,6 +104,20 @@ class ReservationRepository(BaseRepository[Reservation]):
             )
         result = await self.db.execute(query)
         return result.scalar()
+
+    async def get_confirmed_by_event(self, event_id: UUID, limit: int | None = None) -> list[Reservation]:
+        query = (
+            select(Reservation)
+            .options(selectinload(Reservation.user))
+            .where(
+                Reservation.event_id == event_id,
+                Reservation.status == "CONFIRMED",
+            )
+        )
+        if limit is not None:
+            query = query.limit(limit)
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def sum_booked_tickets(self, event_id: UUID) -> int:
         query = select(func.coalesce(func.sum(Reservation.ticket_quantity), 0)).where(
