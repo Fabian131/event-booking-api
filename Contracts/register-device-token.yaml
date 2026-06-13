@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: Register Device Token API
+  version: 1.0.0
+
+paths:
+  /api/v1/device-tokens:
+    post:
+      summary: Register or update an Expo push token
+      description: >
+        Saves the Expo push token (`ExponentPushToken[...]`) for the authenticated
+        user's current device. If the token already exists in the database it is
+        reactivated (`is_active = true`). Call this endpoint after a successful
+        login and every time the Expo SDK fires an `onNewToken` event.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceTokenRequest'
+            example:
+              token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+              platform: "android"
+      responses:
+        '200':
+          description: Token registered or reactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceTokenResponse'
+        '401':
+          description: Unauthorized — missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation failed (e.g. empty token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterDeviceTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: >
+            Expo push token obtained via `Notifications.getExpoPushTokenAsync()`.
+            Format: `ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]`
+          example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+        platform:
+          type: string
+          enum: [android, ios]
+          default: android
+          description: Device platform. Used for diagnostics only.
+
+    DeviceTokenResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        token:
+          type: string
+          example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+        platform:
+          type: string
+          enum: [android, ios]
+          example: android
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string

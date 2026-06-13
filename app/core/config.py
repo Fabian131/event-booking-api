@@ -20,10 +20,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
-    
+
     CLOUDINARY_CLOUD_NAME: str = ""
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
+
+    # Push Notifications
+    REMINDER_CHECK_INTERVAL_MINUTES: int = 5
 
     # SMTP Email
     SMTP_HOST: str = ""

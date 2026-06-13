@@ -21,3 +21,4 @@ class User(Base):
 
     reservations: Mapped[list["Reservation"]] = relationship("Reservation", back_populates="user", lazy="selectin")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", lazy="selectin")
+    device_tokens: Mapped[list["UserDeviceToken"]] = relationship("UserDeviceToken", back_populates="user", lazy="selectin")
