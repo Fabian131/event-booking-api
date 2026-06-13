@@ -1,4 +1,5 @@
 import smtplib
+<<<<<<< Updated upstream
 from email.message import EmailMessage
 from app.core.config import settings
 import logging
@@ -83,10 +84,97 @@ class EmailService:
                 <div class="footer">
                     <p>&copy; 2026 Event Booking. Todos los derechos reservados.</p>
                 </div>
+=======
+import asyncio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from app.core.config import settings
+
+
+class EmailService:
+    def __init__(self):
+        self.smtp_host = settings.SMTP_HOST
+        self.smtp_port = settings.SMTP_PORT
+        self.smtp_user = settings.SMTP_USER
+        self.smtp_password = settings.SMTP_PASSWORD
+        self.smtp_from = settings.SMTP_FROM_EMAIL
+        self.smtp_use_tls = settings.SMTP_USE_TLS
+
+    async def send_cancellation_email(
+        self,
+        to_email: str,
+        user_name: str,
+        event_title: str,
+        event_date: str,
+        ticket_quantity: int,
+    ) -> None:
+        subject = f"Reservation Cancelled - {event_title}"
+        body = self._build_cancellation_body(user_name, event_title, event_date, ticket_quantity)
+        await self._send_email(to_email, subject, body)
+
+    async def _send_email(self, to_email: str, subject: str, html_body: str) -> None:
+        if not self.smtp_host:
+            return
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = self.smtp_from
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
+
+        await asyncio.to_thread(self._send_smtp, msg, to_email)
+
+    def _send_smtp(self, msg: MIMEMultipart, to_email: str) -> None:
+        if self.smtp_use_tls:
+            server = smtplib.SMTP(self.smtp_host, self.smtp_port)
+            server.starttls()
+        else:
+            server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
+
+        if self.smtp_user and self.smtp_password:
+            server.login(self.smtp_user, self.smtp_password)
+
+        server.sendmail(self.smtp_from, to_email, msg.as_string())
+        server.quit()
+
+    def _build_cancellation_body(
+        self,
+        user_name: str,
+        event_title: str,
+        event_date: str,
+        ticket_quantity: int,
+    ) -> str:
+        return f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #e74c3c;">Reservation Cancelled</h2>
+                <p>Hello {user_name},</p>
+                <p>Your reservation has been successfully cancelled as requested.</p>
+                <table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Event</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{event_title}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Date</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{event_date}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Tickets Released</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{ticket_quantity}</td>
+                    </tr>
+                </table>
+                <p>Your ticket slots have been returned to the public pool.</p>
+                <p style="color: #999; font-size: 12px; margin-top: 30px;">
+                    If you did not request this cancellation, please contact support immediately.
+                </p>
+>>>>>>> Stashed changes
             </div>
         </body>
         </html>
         """
+<<<<<<< Updated upstream
 
         msg = EmailMessage()
         msg['Subject'] = subject
@@ -105,3 +193,5 @@ class EmailService:
             logger.error(f"Failed to send email to {to_email}: {e}")
 
 email_service = EmailService()
+=======
+>>>>>>> Stashed changes

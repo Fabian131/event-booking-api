@@ -1,20 +1,32 @@
 from uuid import UUID
 from datetime import date
+<<<<<<< Updated upstream
 from fastapi import BackgroundTasks
 from app.services.email_service import email_service
+=======
+import asyncio
+>>>>>>> Stashed changes
 from app.core.validation import ValidationErrors
 from app.domain.models import Reservation, Event
 from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.reservation import CreateReservationRequest, ReservationStatus, ReservationResponse, ReservationUserContext
+from app.services.email_service import EmailService
 
 
 class ReservationService:
-    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository):
+    def __init__(
+        self,
+        reservation_repo: ReservationRepository,
+        event_repo: EventRepository,
+        notification_repo: NotificationRepository,
+        email_service: EmailService | None = None,
+    ):
         self.reservation_repo = reservation_repo
         self.event_repo = event_repo
         self.notification_repo = notification_repo
+        self.email_service = email_service or EmailService()
 
     async def list_reservations(
         self,
@@ -103,6 +115,7 @@ class ReservationService:
         event = await self.event_repo.get_by_id(reservation.event_id)
         await self._notify(reservation.user_id, reservation, event, "reservation_cancelled", "Reservation Cancelled",
                            f"Your reservation for {event.title} has been cancelled.")
+<<<<<<< Updated upstream
         
         # Schedule email notification
         # In SQLAlchemy async, we might need to ensure user is loaded or use the user_repo, 
@@ -116,8 +129,29 @@ class ReservationService:
                 user_name=f"{user.first_name} {user.last_name}",
                 event_title=event.title if event else "Unknown Event"
             )
+=======
+
+        asyncio.create_task(self._dispatch_cancellation_email(reservation, event))
+>>>>>>> Stashed changes
 
         return await self._to_response(reservation)
+
+    async def _dispatch_cancellation_email(self, reservation: Reservation, event: Event | None) -> None:
+        if not event:
+            return
+        user = reservation.user
+        if not user:
+            return
+        try:
+            await self.email_service.send_cancellation_email(
+                to_email=user.email,
+                user_name=f"{user.first_name} {user.last_name}",
+                event_title=event.title,
+                event_date=event.date.isoformat() if event.date else "N/A",
+                ticket_quantity=reservation.ticket_quantity,
+            )
+        except Exception:
+            pass
 
     async def _get_event(self, event_id: UUID) -> Event:
         event = await self.event_repo.get_by_id(event_id)

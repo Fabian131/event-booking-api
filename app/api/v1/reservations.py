@@ -1,4 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+<<<<<<< Updated upstream
+=======
+from fastapi.responses import JSONResponse
+>>>>>>> Stashed changes
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
@@ -11,6 +15,7 @@ from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.services.reservation_service import ReservationService
+from app.services.email_service import EmailService
 from app.schemas.reservation import CreateReservationRequest, ReservationResponse, ReservationStatus
 from app.schemas.event import CalendarDatesResponse
 from app.schemas.common import PaginatedResponse, PaginationMeta, ValidationError
@@ -138,5 +143,16 @@ async def cancel_reservation(
     except ValueError as e:
         detail = e.args[0]
         if any(d.get("field") == "reservation_id" for d in detail):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "not_found", "message": "Reservation not found", "details": detail},
+            )
+        if any(d.get("field") == "status" for d in detail):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"error": "already_cancelled", "message": "This reservation has already been cancelled", "details": detail},
+            )
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "validation_error", "message": "One or more validation errors occurred", "details": detail},
+        )
