@@ -7,14 +7,16 @@ from app.domain.models import Reservation, Event
 from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.event_repository import EventRepository
 from app.repositories.notification_repository import NotificationRepository
+from app.repositories.user_repository import UserRepository
 from app.schemas.reservation import CreateReservationRequest, ReservationStatus, ReservationResponse, ReservationUserContext
 
 
 class ReservationService:
-    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository):
+    def __init__(self, reservation_repo: ReservationRepository, event_repo: EventRepository, notification_repo: NotificationRepository, user_repo: UserRepository | None = None):
         self.reservation_repo = reservation_repo
         self.event_repo = event_repo
         self.notification_repo = notification_repo
+        self.user_repo = user_repo
 
     async def list_reservations(
         self,
@@ -25,26 +27,22 @@ class ReservationService:
         status_filter: str | None,
         event_id: UUID | None = None,
         search: str | None = None,
-        event_date: date | None = None,
     ) -> tuple[list[dict], int]:
         offset = (page - 1) * limit
 
         if event_id and user_role == "business":
             reservations = await self.reservation_repo.get_by_event(
-                event_id, offset, limit, status_filter, search, event_date
+                event_id, offset, limit, status_filter, search
             )
-            total = await self.reservation_repo.count_by_event(event_id, status_filter, search, event_date)
+            total = await self.reservation_repo.count_by_event(event_id, status_filter, search)
         else:
-            reservations = await self.reservation_repo.get_by_user(user_id, offset, limit, status_filter, event_date)
-            total = await self.reservation_repo.count_by_user(user_id, status_filter, event_date)
+            reservations = await self.reservation_repo.get_by_user(user_id, offset, limit, status_filter)
+            total = await self.reservation_repo.count_by_user(user_id, status_filter)
 
         enriched = []
         for r in reservations:
             enriched.append(await self._to_response(r))
         return enriched, total
-
-    async def list_calendar_dates(self, user_id: UUID, year: int, month: int) -> list[dict]:
-        return await self.reservation_repo.get_calendar_dates(user_id, year, month)
 
     async def get_reservation(self, reservation_id: UUID, user_id: UUID, user_role: str) -> dict:
         reservation = await self.reservation_repo.get_by_id(reservation_id)
@@ -127,7 +125,17 @@ class ReservationService:
 
     async def _to_response(self, reservation: Reservation) -> dict:
         event = await self.event_repo.get_by_id(reservation.event_id)
-        user = reservation.user
+
+        # Fetch user explicitly via async query to avoid lazy-load in async context
+        user = None
+        if self.user_repo:
+            user = await self.user_repo.get_by_id(reservation.user_id)
+
+        user_data = {
+            "user_id": user.id if user else reservation.user_id,
+            "user_name": f"{user.first_name} {user.last_name}" if user else "",
+            "user_email": user.email if user else "",
+        }
 
         return {
             "id": reservation.id,
@@ -140,11 +148,7 @@ class ReservationService:
             "ticket_quantity": reservation.ticket_quantity,
             "status": reservation.status,
             "notes": reservation.notes,
-            "user": {
-                "user_id": user.id,
-                "user_name": f"{user.first_name} {user.last_name}",
-                "user_email": user.email,
-            },
+            "user": user_data,
             "created_at": reservation.created_at,
             "updated_at": reservation.updated_at,
         }
