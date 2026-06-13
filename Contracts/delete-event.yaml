@@ -7,7 +7,10 @@ paths:
   /api/v1/events/{event_id}:
     delete:
       summary: Delete event
-      description: Deletes an event and all its schedules (business user only).
+      description: >
+        Permanently deletes an event and all associated reservations
+        (business user only). Triggers a background email notification to
+        every user holding a confirmed reservation for the event.
       security:
         - bearerAuth: []
       parameters:
@@ -20,7 +23,9 @@ paths:
           example: "123e4567-e89b-12d3-a456-426614174000"
       responses:
         '204':
-          description: Event deleted successfully
+          description: >
+            Event deleted successfully. All confirmed reservation holders
+            will be notified via email in the background.
         '401':
           description: Unauthorized - invalid or missing token
           content:

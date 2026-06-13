@@ -1,13 +1,18 @@
+import logging
 from uuid import UUID
 from datetime import date, datetime, timezone, timedelta
 
 CR_TZ = timezone(timedelta(hours=-6))
-from fastapi import UploadFile
+from fastapi import UploadFile, BackgroundTasks
 from app.core.validation import ValidationErrors
 from app.core.cloudinary import upload_event_image, delete_event_image
 from app.domain.models import Event
 from app.repositories.event_repository import EventRepository
+from app.repositories.reservation_repository import ReservationRepository
+from app.services.email_service import email_service
 from app.schemas.event import CreateEventRequest, UpdateEventRequest, EventResponse
+
+logger = logging.getLogger(__name__)
 
 
 VALID_CATEGORIES = {"sports", "music", "culture", "gastronomy", "wellness", "education", "other"}
@@ -135,11 +140,51 @@ class EventService:
     async def list_calendar_dates(self, year: int, month: int) -> list[dict]:
         return await self.event_repo.get_calendar_dates(year, month)
 
-    async def delete_event(self, event_id: UUID) -> None:
+    async def delete_event(self, event_id: UUID, background_tasks: BackgroundTasks | None = None) -> None:
         event = await self.event_repo.get_by_id(event_id)
         if not event:
             raise ValueError([{"field": "event_id", "message": "Event not found"}])
+
+        event_title = event.title
+        event_date_str = event.date.isoformat()
+        image_url = event.image_url
+
+        recipients: list[dict] = []
+        if background_tasks is not None:
+            reservation_repo = ReservationRepository(self.event_repo.db)
+            confirmed = await reservation_repo.get_confirmed_by_event(event_id, limit=1000)
+            for reservation in confirmed:
+                user = reservation.user
+                if user and user.email:
+                    recipients.append({
+                        "email": user.email,
+                        "name": f"{user.first_name} {user.last_name}",
+                    })
+
+        if image_url:
+            from app.core.cloudinary import delete_event_image
+            delete_event_image(image_url)
+
         await self.event_repo.delete(event)
+
+        if background_tasks is not None:
+            for recipient in recipients:
+                background_tasks.add_task(
+                    email_service.send_event_cancelled_email,
+                    to_email=recipient["email"],
+                    user_name=recipient["name"],
+                    event_title=event_title,
+                    event_date=event_date_str,
+                )
+                logger.info(
+                    "Queued event cancellation email for %s regarding event %s",
+                    recipient["email"], event_id,
+                )
+            if len(recipients) >= 1000:
+                logger.warning(
+                    "Event %s had >=1000 confirmed reservations. Only first 1000 were notified.",
+                    event_id,
+                )
 
     def _to_response(self, event: Event, remaining_capacity: int) -> dict:
         return {

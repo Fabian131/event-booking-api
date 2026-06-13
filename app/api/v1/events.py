@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -188,10 +188,11 @@ async def update_event(
 )
 async def delete_event(
     event_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_business_user),
     event_service: EventService = Depends(get_event_service),
 ):
     try:
-        await event_service.delete_event(event_id)
+        await event_service.delete_event(event_id, background_tasks)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.args[0])

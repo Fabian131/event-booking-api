@@ -370,3 +370,209 @@ async def test_calendar_dates_excludes_inactive(client: AsyncClient, create_user
     assert response.status_code == 200
     dates = [item["date"] for item in response.json()["data"]]
     assert "2026-11-10" not in dates
+
+
+# ── Delete Event ─────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_delete_event_success(client: AsyncClient, create_user):
+    await create_user(
+        email="business-del@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="Delete",
+    )
+    headers = await _login_headers(client, "business-del@example.com")
+    event_response = await _create_event(client, headers)
+    event_id = event_response.json()["id"]
+
+    delete_response = await client.delete(
+        f"/api/v1/events/{event_id}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 204
+
+    get_response = await client.get(f"/api/v1/events/{event_id}")
+    assert get_response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_event_not_found(client: AsyncClient, create_user):
+    await create_user(
+        email="business-nf@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="NotFound",
+    )
+    headers = await _login_headers(client, "business-nf@example.com")
+
+    response = await client.delete(
+        "/api/v1/events/00000000-0000-0000-0000-000000000000",
+        headers=headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == [{"field": "event_id", "message": "Event not found"}]
+
+
+@pytest.mark.asyncio
+async def test_delete_event_with_reservations(client: AsyncClient, create_user):
+    await create_user(
+        email="business-wr@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="WithRes",
+    )
+    business_headers = await _login_headers(client, "business-wr@example.com")
+    event_response = await _create_event(client, business_headers)
+    event_id = event_response.json()["id"]
+
+    await client.post(
+        "/api/v1/auth/register",
+        json={
+            "first_name": "Customer",
+            "last_name": "One",
+            "email": "customer1@example.com",
+            "password": "Password1!",
+        },
+    )
+    customer1_headers = await _login_headers(client, "customer1@example.com")
+    await client.post(
+        "/api/v1/reservations",
+        json={"event_id": event_id, "ticket_quantity": 2},
+        headers=customer1_headers,
+    )
+
+    await client.post(
+        "/api/v1/auth/register",
+        json={
+            "first_name": "Customer",
+            "last_name": "Two",
+            "email": "customer2@example.com",
+            "password": "Password1!",
+        },
+    )
+    customer2_headers = await _login_headers(client, "customer2@example.com")
+    await client.post(
+        "/api/v1/reservations",
+        json={"event_id": event_id, "ticket_quantity": 1},
+        headers=customer2_headers,
+    )
+
+    res_list = await client.get(
+        f"/api/v1/reservations?event_id={event_id}",
+        headers=business_headers,
+    )
+    assert len(res_list.json()["data"]) == 2
+
+    delete_response = await client.delete(
+        f"/api/v1/events/{event_id}",
+        headers=business_headers,
+    )
+
+    assert delete_response.status_code == 204
+
+    get_response = await client.get(f"/api/v1/events/{event_id}")
+    assert get_response.status_code == 404
+
+    res_list_after = await client.get(
+        f"/api/v1/reservations?event_id={event_id}",
+        headers=business_headers,
+    )
+    assert len(res_list_after.json()["data"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_event_requires_business_role(client: AsyncClient, create_user):
+    await create_user(
+        email="business-req@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="Req",
+    )
+    business_headers = await _login_headers(client, "business-req@example.com")
+    event_response = await _create_event(client, business_headers)
+    event_id = event_response.json()["id"]
+
+    response = await client.delete(f"/api/v1/events/{event_id}")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_delete_event_clears_from_list(client: AsyncClient, create_user):
+    await create_user(
+        email="business-list@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="List",
+    )
+    headers = await _login_headers(client, "business-list@example.com")
+
+    e1 = await client.post(
+        "/api/v1/events",
+        data={
+            "title": "Event to delete",
+            "max_capacity": 50,
+            "category": "music",
+            "date": "2026-12-15",
+            "start_time": "10:00:00",
+            "end_time": "12:00:00",
+        },
+        headers=headers,
+    )
+    assert e1.status_code == 201
+
+    e2 = await client.post(
+        "/api/v1/events",
+        data={
+            "title": "Event to keep",
+            "max_capacity": 50,
+            "category": "sports",
+            "date": "2026-12-16",
+            "start_time": "10:00:00",
+            "end_time": "12:00:00",
+        },
+        headers=headers,
+    )
+    assert e2.status_code == 201
+
+    list_before = await client.get("/api/v1/events")
+    assert list_before.json()["pagination"]["total"] >= 2
+
+    event_id = e1.json()["id"]
+
+    await client.delete(f"/api/v1/events/{event_id}", headers=headers)
+
+    list_after = await client.get("/api/v1/events")
+    assert list_after.json()["pagination"]["total"] == list_before.json()["pagination"]["total"] - 1
+    ids_after = [e["id"] for e in list_after.json()["data"]]
+    assert event_id not in ids_after
+
+
+@pytest.mark.asyncio
+async def test_delete_event_double_delete_returns_404(client: AsyncClient, create_user):
+    await create_user(
+        email="business-dd@example.com",
+        password="Password1!",
+        role="business",
+        first_name="Business",
+        last_name="DoubleDel",
+    )
+    headers = await _login_headers(client, "business-dd@example.com")
+    event_response = await _create_event(client, headers)
+    event_id = event_response.json()["id"]
+
+    first = await client.delete(f"/api/v1/events/{event_id}", headers=headers)
+    assert first.status_code == 204
+
+    second = await client.delete(f"/api/v1/events/{event_id}", headers=headers)
+    assert second.status_code == 404
+    assert second.json()["detail"] == [{"field": "event_id", "message": "Event not found"}]
