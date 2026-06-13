@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
 
+    # SMTP Email
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@eventbooking.com"
+    SMTP_USE_TLS: bool = True
+
     # Admin Seed
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
